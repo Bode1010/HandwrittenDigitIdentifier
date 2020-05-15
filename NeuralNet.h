@@ -7,7 +7,7 @@
 //v0.1.1: Convolutions implemented. Working with digit recognition
 //v0.2: gru layer implemented and tested. Working with sentiment analysis problem.
 //v0.3: Multithread and batchNorm implemented and tested.
-//current version: v0.1
+//current version: v1.1
 class NeuralNet : public NeuralNetwork
 {
 	//Variables
@@ -34,6 +34,8 @@ class NeuralNet : public NeuralNetwork
 	vector<float> getOutput(int pipe);
 	//Forward pass through the network
 	void feedForward(vector<float> input, int pipe);
+	//Back pass through the network
+	void BackPropagate(const vector<float>& output, int pipe);
 	//backward pass through a dense layer using stochastic gradient descent
 	void DenseSGDBackPass(int layerIndex, int pipeIndex);
 	//Foward pass through a dense layer
@@ -65,7 +67,6 @@ class NeuralNet : public NeuralNetwork
 	void LoadCurrNetVersion(ifstream);
 
 public:
-	void BackPropagate(const vector<float>& output, int pipe);
 
 
 	float getError();
@@ -76,9 +77,13 @@ public:
 	float getMaxOutput();
 	int getMaxOutputIndex();
 	vector<float> getOutput();
-	void operator=(const NeuralNet& obj);
-	void feedForward(const vector<float>& input);
 	NeuralNet(vector<Layer>& layout);
+	int size() { return net.size(); }
+	void operator=(const NeuralNet& obj);
+	int getConvLayerFilterSize(int layerIndex);
+	vector<float> getLayerOutput(int layerIndex);
+	void feedForward(const vector<float>& input);
+	vector<int> getConvLayerImgSize(int layerIndex);
 	void train(const vector<vector<float>>& input, const vector<vector<float>>& output);
 	void trainWithOneOutput(const vector<vector<float>>& inputs, const vector<OneOutput>& outputs);
 };

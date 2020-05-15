@@ -1,20 +1,25 @@
 #include "NeuralNet.h"
+#include "Display.h"
 #include <fstream>
 
 //Notes:
 //Use square filters if not rotating the matrix will break. I could have accounted for this, but its easier (and more space efficient) to just use square filters
 //During the conv feed forward at some point in the code it has one or two duplicates of an entire layer, this might be inefficient. If im ever pressured for space I can fix this
 //If filters are becoming nan(ind), one of the matrixes updating them is all zeros, you might want to check convsgdbackprop, nextLayerDense or nextLayerConv
+//If the vizualization is too slow, its cuz im repeating calculations that only need to be done once in the vizualization process. Remember to take those out during refactoring
 
 //ToDo:
-//Implement save/load functionality:
-//Train a net, take a picture of the result of its convolution, compare to result of convolution of loaded net
-//Make sure nextLayerDense/Convo functions work when some neurons are not active with hashing
-//Put stops if the net was initialized without any layers, or if i try to backpropagate without feed forwarding first 
-
+//Put stops if the net was initialized without any layers, or if i try to backpropagate without feed forwarding first.
+//Develop draw to screen function
 
 //If I stopped programming in an uncompilable state, Where did I stop last?
-//For some reason when loading conv layer has no neurons
+//Program Complete
+
+
+//Drawing not working
+//Add text to the probability section
+//sometimes when I click a button nothing happens
+//Filter sizing is messed up for 4 filter layers
 
 int reverseInt(int i) {
 	char c1, c2, c3, c4;
@@ -86,31 +91,27 @@ int main() {
 
 	//Neural network architecture: Image is black and white so its initial depth is 1, afterwards its depth will be the num of filters from the prev layer
 	Layer input = Util::Dense(28 * 28, NONE, 0, 1, 28 * 28);
-	Layer h1 = Util::Convo(3, 3, 4, RELU, 28, 28, 1, false, 2);
+	Layer h1 = Util::Convo(3, 3, 8, RELU, 28, 28, 1, false);
 	//Back to back conv layers don't need image size specified if a pointer to previous convolutional layer is given
-	Layer h2 = Util::Convo(5, 5, 4, RELU, false, 2, &h1);
+	Layer h2 = Util::Convo(5, 5, 12, RELU, false, 2, &h1);
 	Layer h3 = Util::Dense(75, RELU, 0, 1, 75);
 	Layer output = Util::Dense(10, SOFTMAX, 0, 1, 10);
 
 	vector<Layer> Layout = { input, h1, h3, output };
 	NeuralNet myNet(Layout);
 
-	
+	//Train the network
 	for (int i = 0; i < 10; i++){
-		//myNet.feedForward((*dataset)[0]);
-		//myNet.BackPropagate((*label)[0], 0);
 		//myNet.train(*dataset, *label);
 	}
 	myNet.load("Identify7.hcnn");
 	//myNet.save("Identify7.hcnn");
 
-
-	cout << "Given 7: " << endl;
-	myNet.feedForward((*dataset)[0]);
-	myNet.printOutput();
-
-
-
+	/*******Draw to Screen**********/
+	DisplayCnn artist(myNet, (*dataset), 28, 28);
+	artist.Draw();
+	/******************************/
+	
 	delete(dataset);
 	delete(label);
 

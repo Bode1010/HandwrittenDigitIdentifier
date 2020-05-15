@@ -86,10 +86,10 @@ struct Layer {
 
 	//Convolution Vars: When max pooling, the x, y and stride of the filter are the same number and < the img x and y, eg a 3 x 3 filter with stride 3. I do this cuz its easy for me to understand
 	vector<Image> filters;
-	int prevImgLen, prevImgWid, prevImgDepth, maxPoolx, maxPooly, maxPoolStride = -1;
+	int prevImgLen = 0, prevImgWid =  0, prevImgDepth = 0, maxPoolx = -1, maxPooly = -1, maxPoolStride = -1;
 	//Stores the image length and width before max pooling
-	int imgLen, imgWid;
-	bool zeroPad;
+	int imgLen = 0, imgWid = 0;
+	bool zeroPad = false;
 	//To store the pre max pooling biases of a convolutional layer. Randomized btw -1 and 1 at the beginning
 	vector<float> convoBias;
 	//To store the indexes of the neurons with the max values for each image during max pooling. Used in backprop

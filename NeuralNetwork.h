@@ -32,5 +32,3 @@ public:
 	virtual void save(string) =0;
 	virtual bool load(string) =0;
 };
-
-

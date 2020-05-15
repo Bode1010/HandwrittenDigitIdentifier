@@ -149,6 +149,10 @@ void NeuralNet::printOutput(int pipe) {
 	std::cout << " }" << endl;
 }
 
+vector<float> NeuralNet::getLayerOutput(int layerIndex) {
+	return net[layerIndex].inputAt(0);
+}
+
 void NeuralNet::printOutput() {
 	printOutput(0);
 }
@@ -925,3 +929,20 @@ vector<float> NeuralNet::getOutput(int pipe) {
 void NeuralNet::operator=(const NeuralNet& obj) {
 	this->net = obj.net;
 }
+
+vector<int> NeuralNet::getConvLayerImgSize(int layerIndex) {
+	int x = net[layerIndex].imgLen;
+	int y = net[layerIndex].imgWid;
+	if (net[layerIndex].maxPoolStride != -1){
+		float tempX = 1.f * x / net[layerIndex].maxPoolStride;
+		float tempY = 1.f * y / net[layerIndex].maxPoolStride;
+		x = (tempX > (int)tempX) ? tempX + 1 : tempX;
+		y = (tempY > (int)tempY) ? tempY + 1 : tempY;
+	}
+	return { x, y };
+}
+
+int NeuralNet::getConvLayerFilterSize(int layerIndex) {
+	return net[layerIndex].filters.size();
+}
+

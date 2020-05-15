@@ -42,4 +42,3 @@ public:
 	SimHash(int k, int numOfTables);
 	void SetVars(int k, int numOfTables);
 };
-

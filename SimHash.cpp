@@ -141,7 +141,6 @@ void SimHash::printTables() {
 			}
 			std::cout << "}" << endl;
 		}
-
 	}
 }
 
