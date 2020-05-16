@@ -7,7 +7,7 @@
 //v0.1.1: Convolutions implemented. Working with digit recognition
 //v0.2: gru layer implemented and tested. Working with sentiment analysis problem.
 //v0.3: Multithread and batchNorm implemented and tested.
-//current version: v1.1
+//current version: v0.1.1
 class NeuralNet : public NeuralNetwork
 {
 	//Variables
@@ -73,6 +73,7 @@ public:
 	NeuralNet() {};
 	void save(string);
 	bool load(string);
+	int getLayerSize(int layerIndex);
 	void printOutput();
 	float getMaxOutput();
 	int getMaxOutputIndex();

@@ -3,6 +3,7 @@
 #include <fstream>
 
 //Notes:
+//The trainedIdentifier.hcnn save file trained on 30k images for 7 hours to achieve this level of mastery. DO NOT DELETE!
 //Use square filters if not rotating the matrix will break. I could have accounted for this, but its easier (and more space efficient) to just use square filters
 //During the conv feed forward at some point in the code it has one or two duplicates of an entire layer, this might be inefficient. If im ever pressured for space I can fix this
 //If filters are becoming nan(ind), one of the matrixes updating them is all zeros, you might want to check convsgdbackprop, nextLayerDense or nextLayerConv
@@ -10,16 +11,9 @@
 
 //ToDo:
 //Put stops if the net was initialized without any layers, or if i try to backpropagate without feed forwarding first.
-//Develop draw to screen function
 
 //If I stopped programming in an uncompilable state, Where did I stop last?
 //Program Complete
-
-
-//Drawing not working
-//Add text to the probability section
-//sometimes when I click a button nothing happens
-//Filter sizing is messed up for 4 filter layers
 
 int reverseInt(int i) {
 	char c1, c2, c3, c4;
@@ -104,7 +98,7 @@ int main() {
 	for (int i = 0; i < 10; i++){
 		//myNet.train(*dataset, *label);
 	}
-	myNet.load("Identify7.hcnn");
+	myNet.load("TrainedIdentifier.hcnn");
 	//myNet.save("Identify7.hcnn");
 
 	/*******Draw to Screen**********/

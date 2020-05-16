@@ -946,3 +946,6 @@ int NeuralNet::getConvLayerFilterSize(int layerIndex) {
 	return net[layerIndex].filters.size();
 }
 
+int NeuralNet::getLayerSize(int layerIndex) {
+	return net[layerIndex].size();
+}

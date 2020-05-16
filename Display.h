@@ -26,7 +26,7 @@ private:
 	//Holds the maximum input index, or inputs.size();
 	int maxInput = 0;
 	//To find which pixels are drawn on when drawing on the screen
-	float brushThickness = 1.f;
+	float brushThickness = .8f;
 	bool mouseHeld = false;
 	//Holds the current image being draws to screen and displayed in the network
 	vector<float> curImage;
@@ -41,7 +41,7 @@ private:
 	//Takes filters from neural network and draws them within xLimit and yLimit
 	vector<sf::Vertex> FilterVisualizer(int xLoc, int yLoc, int xLimit, int yLimit);
 	//Takes images from the input database, the limits within which its supposed to be drawn and a reference to a vector<float> that can be passed to the neural network
-	vector<sf::Vertex> DrawableWindow(sf::Event evnt, int xLoc, int yLoc, bool leftClick, bool rightClick, bool randClick, bool clearClick, sf::RenderWindow& window, vector<float>& currentImage, int xLimit, int yLimit);
+	vector<sf::Vertex> DrawableWindow( int xLoc, int yLoc, bool leftClick, bool rightClick, bool randClick, bool clearClick, vector<float>& currentImage, int xLimit, int yLimit);
 	//Takes in the number of probabilities as well as the info about the space its meant to be drawn in and spits out a vector of text numbering the probability
 	vector<sf::Text> probabilityIndexVisualizer(int xLoc, int yLoc, int numOfProbabilities, int xLimit, int yLimit);
 

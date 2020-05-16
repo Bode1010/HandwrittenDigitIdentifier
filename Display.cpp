@@ -94,14 +94,19 @@ void DisplayCnn::Draw() {
 		buttons[i * 4 + 3].color = colorArr[i-4];
 	}
 	
-	auto probabilityIndexes = probabilityIndexVisualizer(855, 100, myNet.getOutput().size(), 50, 350);
+	
+	//myNet.getLayerSize(myNet.size()-1)
+	auto probabilityIndexes = probabilityIndexVisualizer(855, 100, myNet.getLayerSize(myNet.size() - 1), 50, 350);
+	//The visualizers given the info they need to vizualize(ie create images that can be displayed to screen)
+	vector<sf::Vertex> t1, t2, t3;
+	myNet.feedForward(curImage);
+	t1 = DrawableWindow(25, 100, 0, 0, 0, 0, curImage, 200, 200);
+	t2 = FilterVisualizer(250, 50, 600, 400);
+	t3 = probabilityVisualizer(900, 100, myNet.getOutput(), 50, 312);
+
 	while (window.isOpen()) {
 		sf::Event evnt = sf::Event();
-		//The visualizers given the info they need to visualize
-		auto t1 = DrawableWindow(evnt, 25, 100, 0, 0, 0, 0, window, curImage, 200, 200);
-		auto t2 = FilterVisualizer(250, 50, 600, 400);
-		auto t3 = probabilityVisualizer(900, 100, myNet.getOutput(), 50, 312);
-
+		
 		while (window.pollEvent(evnt)) {
 			switch (evnt.type) {
 			case sf::Event::Closed:
@@ -142,21 +147,24 @@ void DisplayCnn::Draw() {
 						if (mouseDim.x > buttons[i * 4].position.x && mouseDim.x < buttons[i * 4 + 1].position.x && mouseDim.y > buttons[i * 4].position.y&& mouseDim.y < buttons[i * 4 + 2].position.y) {
 							switch (i) {
 							case 4:
-								t1 = DrawableWindow(evnt, 25, 100, 1, 0, 0, 0, window, curImage, 200, 200);
+								t1 = DrawableWindow(25, 100, 1, 0, 0, 0, curImage, 200, 200);
 								break;
 							case 5:
-								t1 = DrawableWindow(evnt, 25, 100, 0, 0, 1, 0, window, curImage, 200, 200);
+								t1 = DrawableWindow(25, 100, 0, 0, 1, 0, curImage, 200, 200);
 								break;
 							case 6:
-								t1 = DrawableWindow(evnt, 25, 100, 0, 0, 0, 1, window, curImage, 200, 200);
+								t1 = DrawableWindow(25, 100, 0, 0, 0, 1, curImage, 200, 200);
 								break;
 							case 7:
-								t1 = DrawableWindow(evnt, 25, 100, 0, 1, 0, 0, window, curImage, 200, 200);
+								t1 = DrawableWindow(25, 100, 0, 1, 0, 0, curImage, 200, 200);
 								break;
 							}
 						}
 					}
 					myNet.feedForward(curImage);
+					t1 = DrawableWindow(25, 100, 0, 0, 0, 0, curImage, 200, 200);
+					t2 = FilterVisualizer(250, 50, 600, 400);
+					t3 = probabilityVisualizer(900, 100, myNet.getOutput(), 50, 312);
 				}
 			default:
 				//If we are holding the mouse down, draw to screen
@@ -184,7 +192,6 @@ void DisplayCnn::Draw() {
 				}
 			}
 		}
-
 		window.clear(sf::Color(25, 100, 25));
 		window.draw(buttons);
 		window.draw(&t1[0], t1.size(), sf::Quads);
@@ -323,7 +330,7 @@ vector<sf::Vertex> DisplayCnn::FilterVisualizer(int xLoc, int yLoc, int xLimit, 
 	return result;
 }
 
-vector<sf::Vertex> DisplayCnn::DrawableWindow(sf::Event evnt, int xLoc, int yLoc, bool leftClick, bool rightClick, bool randClick, bool clearClick, sf::RenderWindow& window, vector<float>& currentImage, int xLimit, int yLimit) {
+vector<sf::Vertex> DisplayCnn::DrawableWindow(int xLoc, int yLoc, bool leftClick, bool rightClick, bool randClick, bool clearClick, vector<float>& currentImage, int xLimit, int yLimit) {
 	if (inputs.size() > 0) {
 		if (rightClick) {
 			if (currImageIndex < maxInput - 1) {
@@ -376,47 +383,7 @@ vector<sf::Vertex> DisplayCnn::DrawableWindow(sf::Event evnt, int xLoc, int yLoc
 		return tmp;
 	}
 
-	/*int xQuad = xLimit / imgLen;
-	int yQuad = yLimit / imgWid;
-	float basicDist = sqrt(xQuad * xQuad + yQuad * yQuad);
-
-	if (window.pollEvent(evnt)) {
-		switch (evnt.type) {
-		case sf::Event::MouseButtonPressed:
-			if (evnt.mouseButton.button == sf::Mouse::Left) {
-				mouseHeld = true;
-				auto mouseDim = sf::Mouse::getPosition(window);
-				if (mouseDim.x > xLoc&& mouseDim.x < xLoc + xLimit && mouseDim.y > yLoc&& mouseDim.y < yLoc + yLimit) {
-					//For every quad in the image, check if its within brush thickness, if it is, change its color value to 255
-					for (int i = 0; i < currentImage.size(); i++) {
-						int xQuadLoc = (i % imgLen) * xQuad + xQuad / 2;
-						int yQuadLoc = (i / imgLen) * yQuad + yQuad / 2;
-						if (sqrt((mouseDim.x - xQuadLoc) * (mouseDim.x - xQuadLoc) + (mouseDim.y - yQuadLoc) * (mouseDim.y - yQuadLoc)) < brushThickness * basicDist) {
-							currentImage[i] = 1;
-						}
-					}
-				}
-			}
-			break;
-		case sf::Event::MouseButtonReleased:
-			mouseHeld = false;
-		default:
-			if (mouseHeld) {
-				auto mouseDim = sf::Mouse::getPosition(window);
-				if (mouseDim.x > xLoc&& mouseDim.x < xLoc + xLimit && mouseDim.y > yLoc&& mouseDim.y < yLoc + yLimit) {
-					//For every quad in the image, check if its within brush thickness, if it is, change its color value to 255
-					for (int i = 0; i < currentImage.size(); i++) {
-						int xQuadLoc = (i % imgLen) * xQuad + xQuad / 2;
-						int yQuadLoc = (i / imgLen) * yQuad + yQuad / 2;
-						if (sqrt((mouseDim.x - xQuadLoc) * (mouseDim.x - xQuadLoc) + (mouseDim.y - yQuadLoc) * (mouseDim.y - yQuadLoc)) < brushThickness * basicDist) {
-							currentImage[i] = 1;
-						}
-					}
-				}
-			}
-		}
-	}*/
-
+	//If somehow it gets here, return the current image
 	auto temp = myImageToOnScreenRepresentation(currentImage, imgLen, imgWid, xLimit, yLimit);
 	for (int i = 0; i < temp.size(); i++) {
 		temp[i].position.x += xLoc;
