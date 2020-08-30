@@ -133,8 +133,8 @@ void NeuralNet::BackPropagate(const vector<float>& output, int pipe) {
 	//For every layer except the input. update weights and neurons
 	if (totalError > 0) {
 		for (int i = outLayIndex; i > 0; i--) {
-			if (net[i].getLayerType() == DENSE) DenseSGDBackPass(i, pipe);
-			if (net[i].getLayerType() == CONVO) ConvSGDBackPass(i, pipe);
+			if (net[i].getLayerType() == DENSE) DenseBackwardPass(i, pipe);
+			if (net[i].getLayerType() == CONVO) ConvBackwardPass(i, pipe);
 		}
 	}
 
@@ -204,7 +204,7 @@ void NeuralNet::DenseForwardPass(int layerIndex, int pipe) {
 	}
 }
 
-void NeuralNet::DenseSGDBackPass(int layerIndex, int pipe) {
+void NeuralNet::DenseBackwardPass(int layerIndex, int pipe) {
 	//Calculate the gradients for the weights and biases
 	for (int i = 0; i < net[layerIndex].size(); i++) {
 		//if the neuron is active
@@ -224,7 +224,7 @@ void NeuralNet::DenseSGDBackPass(int layerIndex, int pipe) {
 			}
 			else if (layerIndex != net.size() - 1 && net[layerIndex + 1].getLayerType() == CONVO){
 				vector<float> gradientAtThisPipe;
-				gradientAtThisPipe = NextLayerConvo(layerIndex, pipe);
+				gradientAtThisPipe = GetGradientIfNextLayerConvo(layerIndex, pipe);
 				//Put the gradients in place
 				if (gradientAtThisPipe.size() != net[layerIndex].neuron.size()) {
 					cout << "Gradient dimensions not equal to layer dimensions. check convsgdbackpass funciton. Layer " << layerIndex << endl;
@@ -360,16 +360,16 @@ void NeuralNet::ConvForwardPass(int layerIndex, int pipe) {
 	}
 }
 
-void NeuralNet::ConvSGDBackPass(int layerIndex, int pipe) {
+void NeuralNet::ConvBackwardPass(int layerIndex, int pipe) {
 	//Update Inputs
 	//If the next layer isnt a conv layer, this layer neurons update using dense back pass
 	vector<float> gradientAtThisPipe;
 	if (net[layerIndex + 1].getLayerType() != CONVO) {
-		gradientAtThisPipe = NextLayerDense(layerIndex, pipe);
+		gradientAtThisPipe = GetGradientIfNextLayerDense(layerIndex, pipe);
 	}
 	//If the next layer is a conv layer, use filter of next layer and dActivation of next layer to calc this layer input gradient
 	else {
-		gradientAtThisPipe = NextLayerConvo(layerIndex, pipe);
+		gradientAtThisPipe = GetGradientIfNextLayerConvo(layerIndex, pipe);
 	}
 
 	if (gradientAtThisPipe.size() != net[layerIndex].neuron.size()) {
@@ -497,7 +497,7 @@ void NeuralNet::ConvSGDBackPass(int layerIndex, int pipe) {
 	}
 }
 
-vector<float> NeuralNet::NextLayerDense(int layerIndex, int pipe) {
+vector<float> NeuralNet::GetGradientIfNextLayerDense(int layerIndex, int pipe) {
 	//Every neuron change is the sum of (the weight to the next neuron) * (the dActiavation of that neuron) * (Its gradient) for every neuron in the next layer except bias
 	Layer nextLayer = net[layerIndex + 1];
 	int thisLayerSize = nextLayer.neuron[0].weight.size();
@@ -515,7 +515,7 @@ vector<float> NeuralNet::NextLayerDense(int layerIndex, int pipe) {
 	return result;
 }
 
-vector<float> NeuralNet::NextLayerConvo(int layerIndex, int pipe) {
+vector<float> NeuralNet::GetGradientIfNextLayerConvo(int layerIndex, int pipe) {
 	Layer nextLayer = net[layerIndex + 1];
 	//Get this layer post pool image dimensions. Work this out
 	int depth = nextLayer.filters.size();

@@ -6,14 +6,8 @@
 //The trainedIdentifier.hcnn save file trained on 30k images for 7 hours to achieve this level of mastery. DO NOT DELETE!
 //Use square filters if not rotating the matrix will break. I could have accounted for this, but its easier (and more space efficient) to just use square filters
 //During the conv feed forward at some point in the code it has one or two duplicates of an entire layer, this might be inefficient. If im ever pressured for space I can fix this
-//If filters are becoming nan(ind), one of the matrixes updating them is all zeros, you might want to check convsgdbackprop, nextLayerDense or nextLayerConv
+//If filters are becoming nan(ind), one of the matrixes updating them is all zeros, you might want to check convbackprop, nextLayerDense or nextLayerConv
 //If the vizualization is too slow, its cuz im repeating calculations that only need to be done once in the vizualization process. Remember to take those out during refactoring
-
-//ToDo:
-//Put stops if the net was initialized without any layers, or if i try to backpropagate without feed forwarding first.
-
-//If I stopped programming in an uncompilable state, Where did I stop last?
-//Program Complete
 
 int reverseInt(int i) {
 	char c1, c2, c3, c4;
@@ -86,7 +80,7 @@ int main() {
 	//Neural network architecture: Image is black and white so its initial depth is 1, afterwards its depth will be the num of filters from the prev layer
 	Layer input = Util::Dense(28 * 28, NONE, 0, 1, 28 * 28);
 	Layer h1 = Util::Convo(3, 3, 8, RELU, 28, 28, 1, false);
-	//Back to back conv layers don't need image size specified if a pointer to previous convolutional layer is given
+	//Back to back conv layers don't need image size or previous layer depth specified if a pointer to previous convolutional layer is given
 	Layer h2 = Util::Convo(5, 5, 12, RELU, false, 2, &h1);
 	Layer h3 = Util::Dense(75, RELU, 0, 1, 75);
 	Layer output = Util::Dense(10, SOFTMAX, 0, 1, 10);
@@ -94,12 +88,13 @@ int main() {
 	vector<Layer> Layout = { input, h1, h3, output };
 	NeuralNet myNet(Layout);
 
-	//Train the network
+	/*Train the network
 	for (int i = 0; i < 10; i++){
-		//myNet.train(*dataset, *label);
+		myNet.train(*dataset, *label);
 	}
+	myNet.save("Identify7.hcnn");*/
+
 	myNet.load("TrainedIdentifier.hcnn");
-	//myNet.save("Identify7.hcnn");
 
 	/*******Draw to Screen**********/
 	DisplayCnn artist(myNet, (*dataset), 28, 28);

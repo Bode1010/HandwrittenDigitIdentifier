@@ -37,11 +37,11 @@ class NeuralNet : public NeuralNetwork
 	//Back pass through the network
 	void BackPropagate(const vector<float>& output, int pipe);
 	//backward pass through a dense layer using stochastic gradient descent
-	void DenseSGDBackPass(int layerIndex, int pipeIndex);
+	void DenseBackwardPass(int layerIndex, int pipeIndex);
 	//Foward pass through a dense layer
 	void DenseForwardPass(int layerIndex, int pipeIndex);
 	//backward pass through a convolutional layer using stochastic gradient descent
-	void ConvSGDBackPass(int layerIndex, int pipeIndex);
+	void ConvBackwardPass(int layerIndex, int pipeIndex);
 	//Foward pass through a Convolutional layer
 	void ConvForwardPass(int layerIndex, int pipeIndex);
 	//Determines which layers get what kind of Back pass. eg dense layers get dense back pass
@@ -54,9 +54,9 @@ class NeuralNet : public NeuralNetwork
 	//Updates number of iterations and updates hash tables
 	void HashUpdateTracker();
 	//Calculates the gradients of this layer if the next layer is Fully connected(Dense)
-	vector<float> NextLayerDense(int layerIndex, int pipe);
+	vector<float> GetGradientIfNextLayerDense(int layerIndex, int pipe);
 	//Calculates the gradients of this layer if the next layer is convolutional
-	vector<float> NextLayerConvo(int layerIndex, int pipe);
+	vector<float> GetGradientIfNextLayerConvo(int layerIndex, int pipe);
 
 	//Debug functions
 	void DebugWeights();
