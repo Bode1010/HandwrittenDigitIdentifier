@@ -92,7 +92,7 @@ int main() {
 
 	//Train the network
 	chrono::system_clock::time_point startTime = chrono::system_clock::now();
-	myNet.trainTillError(*dataset, *label, 5, 10, .01);
+	myNet.trainTillError(*dataset, *label, 10, 10, .01);
 	chrono::system_clock::time_point endTime = chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> timeTaken = (endTime - startTime)/1000.f;
 	cout << "Time taken: " << timeTaken.count() << endl;

@@ -26,6 +26,8 @@ class NeuralNet : public NeuralNetwork
 	int baseT = 50;
 	float lambda = 1.1;
 	float growthRate = 0.1;
+	float adaptiveLearningRateHyperparameter = 0.9;
+	float momentumHyperparameter = 0.9;
 	//number of hash table updates
 	int t = 0;
 	//Number of iterations, used to determine the frequency of hashtable updates
