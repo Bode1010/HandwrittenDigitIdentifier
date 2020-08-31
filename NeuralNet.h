@@ -4,24 +4,36 @@
 #include <fstream>
 
 //v0.1: Simple feed forward and backprop. Working with xor problem and carTrack problem.
-//v0.1.1: Convolutions implemented. Working with digit recognition
+//v0.1.1: Convolutions implemented. Working with digit recognition.
+//v0.1.2: Adam optimizer and trainTillError() function implemented.
 //v0.2: gru layer implemented and tested. Working with sentiment analysis problem.
 //v0.3: Multithread and batchNorm implemented and tested.
 //current version: v0.1.1
+
+//ToDo:
+//Put stops if the net was initialized without any layers, or if i try to backpropagate without feed forwarding first.
+//Make "NextLayerDense()" function work in "DenseBackwardPass()" function like it does in "ConvBackwardPass()"
+//Make sure I'm not currently calling the "NextLayerConvo()" function for every neuron in a dense layer, because that would be foolish and there's\
+No way I would have made that mistake right?
+//I should be making all these edits to the file in the main HashNN program I wrote not here. smh 
+
+//If I stopped programming in an uncompilable state, Where did I stop last?
+//Program Complete
+
 class NeuralNet : public NeuralNetwork
 {
 	//Variables
 	int baseT = 50;
 	float lambda = 1.1;
 	float growthRate = 0.1;
-
 	//number of hash table updates
 	int t = 0;
 	//Number of iterations, used to determine the frequency of hashtable updates
 	int iter = 0;
 	int nextUpdate = baseT;
+	float loss;
 
-	float totalError;
+	bool DEBUG = false;
 
 	vector<Layer> net;
 	//Default cost function
@@ -46,6 +58,10 @@ class NeuralNet : public NeuralNetwork
 	void ConvForwardPass(int layerIndex, int pipeIndex);
 	//Determines which layers get what kind of Back pass. eg dense layers get dense back pass
 	void startNetwork(vector<Layer>& layout);
+	//Clears the gradients of every weight 
+	void clearWeightGradients();
+	//Adds together the weight gradients in every pipe then applies them to the weight at the end of a batch
+	void applyWeightGradients();
 
 	//Element wise multiplication of two vectors
 	float multVec(const vector<float>&, const vector<float>&);
@@ -67,8 +83,7 @@ class NeuralNet : public NeuralNetwork
 	void LoadCurrNetVersion(ifstream);
 
 public:
-
-
+	void setDebugFlag(bool dbug) {DEBUG = dbug;};
 	float getError();
 	NeuralNet() {};
 	void save(string);
@@ -85,7 +100,9 @@ public:
 	vector<float> getLayerOutput(int layerIndex);
 	void feedForward(const vector<float>& input);
 	vector<int> getConvLayerImgSize(int layerIndex);
+	//Accepts one batch of input/output pair
 	void train(const vector<vector<float>>& input, const vector<vector<float>>& output);
+	//Accepts entire dataset
+	void trainTillError(const vector<vector<float>>& input, const vector<vector<float>>& output, int numOfBatches, int numOfEpochs, float targetError);
 	void trainWithOneOutput(const vector<vector<float>>& inputs, const vector<OneOutput>& outputs);
 };
-

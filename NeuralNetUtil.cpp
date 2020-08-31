@@ -1,8 +1,9 @@
 #include "NeuralNetUtil.h"
 
 Image::Image(int x, int y) {
-	xDim = x; yDim = y; 
+	xDim = x; yDim = y;
 	val = vector<float>(x * y);
+	gradients = vector<float>(x * y);
 	for (int i = 0; i < x * y; i++) {
 		val[i] = (rand() % 10000) / 5000.f - 1.f;
 	}
@@ -11,15 +12,7 @@ Image::Image(int x, int y) {
 Image::Image(int x, int y, vector<float>& vals) {
 	xDim = x; yDim = y;
 	val = vals;
-}
-
-Neuron::Neuron(unsigned batchSize) {
-	SetVars(batchSize);
-}
-
-Neuron::Neuron(unsigned batchSize, vector<float> w) {
-	SetVars(batchSize);
-	weight = w;
+	gradients = vector<float>(x * y);
 }
 
 Neuron::Neuron(vector<float> w) {
@@ -34,13 +27,13 @@ int Neuron::floatToInt(float f) {
 
 	if (f >= maxW) {
 		maxW = f;
-	 }
+	}
 	else if (f <= -maxW) {
 		maxW = -f;
 	}
 
 	f *= bigNum;
-	unsigned a = f + maxW*bigNum;
+	unsigned a = f + maxW * bigNum;
 	return a;
 }
 
@@ -48,6 +41,11 @@ void Neuron::SetVars(int batchSize) {
 	active = vector<unsigned>(batchSize / (sizeof(int) * 8) + 1);
 	gradient = vector<float>(batchSize);
 	activation = vector<float>(batchSize);
+
+	//If weights have been set/If it's not a bias neuron
+	if (weight.size() != 0) {
+		weightGradient = vector<vector<float>>(weight.size(), vector<float>(batchSize));
+	}
 }
 
 void Neuron::pushActive(bool num) {
@@ -225,12 +223,12 @@ Layer::Layer(LayerType l, int filterx, int filtery, int numOfFilters, Activation
 	catch (int e) {
 		cout << "The layer pointer passed into the constructor of a convolutional layer isnt a convolutional layer. This is a fatal error. check your constructors" << endl;
 	}
-	
+
 	layType = l;
 	for (int i = 0; i < numOfFilters; i++) {
 		filters.push_back(Image(filterx, filtery));
 	}
-	
+
 	actFunc = func;
 	zeroPad = zPad;
 	prevImgDepth = prevLayer->filters.size();
@@ -253,7 +251,7 @@ Layer::Layer(LayerType l, int filterx, int filtery, int numOfFilters, Activation
 			prevImgLen = prevLayer->prevImgLen;
 			prevImgWid = prevLayer->prevImgWid;
 		}
-	
+
 	}
 	//If it was not zero padded
 	else {
@@ -273,7 +271,7 @@ Layer::Layer(LayerType l, int filterx, int filtery, int numOfFilters, Activation
 			prevImgWid = prevLayer->prevImgWid - prevLayer->filters[0].xDim + 1;
 		}
 	}
-	
+
 	/*Set size of layer*/
 	if (zeroPad) {
 		imgLen = prevImgLen;
@@ -463,13 +461,13 @@ vector<float> Util::MaxPool(Image& image, int xDim, int yDim, int stride, vector
 	//Pool
 	for (yOffset = 0; yOffset < image.yDim; yOffset += stride) {
 		for (xOffset = 0; xOffset < image.xDim; xOffset += stride) {
-			float max = image.val[(yOffset) * image.xDim + (xOffset)];
+			float max = image.val[(yOffset)*image.xDim + (xOffset)];
 			int maxIndex = (yOffset)*image.xDim + (xOffset);
 			for (int i = 0; i < yDim; i++) {
 				for (int j = 0; j < xDim; j++) {
 					if ((yOffset + i) < image.yDim && (xOffset + j) < image.xDim) {
-						if (image.val[(yOffset+i)*image.xDim + (xOffset+j)] > max) {
-							max = image.val[(yOffset+i)*image.xDim + (xOffset+j)];
+						if (image.val[(yOffset + i) * image.xDim + (xOffset + j)] > max) {
+							max = image.val[(yOffset + i) * image.xDim + (xOffset + j)];
 							maxIndex = (yOffset + i) * image.xDim + (xOffset + j);
 						}
 					}
@@ -588,7 +586,7 @@ float Layer::SigmoidActivate(float x) {
 }
 
 float Layer::SigmoidDActivate(float x) {
-	return x * (1-x);
+	return x * (1 - x);
 }
 
 float Layer::SoftmaxActivate(float x) {

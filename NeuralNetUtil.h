@@ -6,13 +6,12 @@ using namespace std;
 
 struct Neuron {
 	Neuron() {};
-	Neuron(unsigned batchSize);
-	Neuron(unsigned batchsize, vector<float> weight);
 	Neuron(vector<float> weight);
 
 	vector<float> weight;
 	vector<float> gradient;
 	vector<float> activation;
+	vector<vector<float>> weightGradient;
 
 	//Add true or false to the end of the active vector
 	void pushActive(bool);
@@ -46,6 +45,7 @@ struct Image {
 	Image(int x, int y, vector<float>& vals);
 	int xDim, yDim;
 	vector<float> val;
+	vector<float> gradients;
 };
 
 struct Layer {
@@ -86,12 +86,13 @@ struct Layer {
 
 	//Convolution Vars: When max pooling, the x, y and stride of the filter are the same number and < the img x and y, eg a 3 x 3 filter with stride 3. I do this cuz its easy for me to understand
 	vector<Image> filters;
-	int prevImgLen = 0, prevImgWid =  0, prevImgDepth = 0, maxPoolx = -1, maxPooly = -1, maxPoolStride = -1;
+	int prevImgLen = 0, prevImgWid = 0, prevImgDepth = 0, maxPoolx = -1, maxPooly = -1, maxPoolStride = -1;
 	//Stores the image length and width before max pooling
 	int imgLen = 0, imgWid = 0;
 	bool zeroPad = false;
 	//To store the pre max pooling biases of a convolutional layer. Randomized btw -1 and 1 at the beginning
 	vector<float> convoBias;
+	vector<float> convoBiasGradient;
 	//To store the indexes of the neurons with the max values for each image during max pooling. Used in backprop
 	vector<vector<vector<int>>> maxNeuronIndex;
 

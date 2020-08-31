@@ -1,6 +1,7 @@
 #include "NeuralNet.h"
 #include "Display.h"
 #include <fstream>
+#include <chrono>
 
 //Notes:
 //The trainedIdentifier.hcnn save file trained on 30k images for 7 hours to achieve this level of mastery. DO NOT DELETE!
@@ -87,14 +88,17 @@ int main() {
 
 	vector<Layer> Layout = { input, h1, h3, output };
 	NeuralNet myNet(Layout);
+	myNet.setDebugFlag(true); 
 
-	/*Train the network
-	for (int i = 0; i < 10; i++){
-		myNet.train(*dataset, *label);
-	}
-	myNet.save("Identify7.hcnn");*/
+	//Train the network
+	chrono::system_clock::time_point startTime = chrono::system_clock::now();
+	myNet.trainTillError(*dataset, *label, 10, 10, .01);
+	chrono::system_clock::time_point endTime = chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> timeTaken = (endTime - startTime)/1000.f;
+	cout << "Time taken: " << timeTaken.count() << endl;
 
-	myNet.load("TrainedIdentifier.hcnn");
+	//myNet.save("Identify7.hcnn");
+	//myNet.load("TrainedIdentifier.hcnn");
 
 	/*******Draw to Screen**********/
 	DisplayCnn artist(myNet, (*dataset), 28, 28);
