@@ -109,6 +109,8 @@ private:
 	static float SoftmaxDActivate(float x);
 	static float NoneDActivate(float x) { return 1; }
 
+	void calculateMySize();
+
 	//Layer vars
 	ActivationFunction actFunc;
 	LayerType layType;

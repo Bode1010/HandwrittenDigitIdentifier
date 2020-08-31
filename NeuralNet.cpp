@@ -470,7 +470,7 @@ void NeuralNet::ConvBackwardPass(int layerIndex, int pipe) {
 
 	for (int i = 0; i < net[layerIndex].filters.size(); i++) {
 		for (int j = 0; j < net[layerIndex].filters[i].xDim * net[layerIndex].filters[i].yDim; j++) {
-			net[layerIndex].filters[i].val[j] -= totalGrad[i][j] * growthRate;
+			net[layerIndex].filters[i].gradients[j] += totalGrad[i][j];
 		}
 	}
 
@@ -481,7 +481,7 @@ void NeuralNet::ConvBackwardPass(int layerIndex, int pipe) {
 	for (int i = 0; i < net[layerIndex].convoBias.size() - 1; i++) {
 		int dep = i / (net[layerIndex].imgLen * net[layerIndex].imgWid);
 		int neuronIndex = i % (net[layerIndex].imgLen * net[layerIndex].imgWid);
-		net[layerIndex].convoBias[i] -= prePool[dep][neuronIndex] * growthRate;
+		net[layerIndex].convoBiasGradient[i] += prePool[dep][neuronIndex];
 	}
 }
 
@@ -656,7 +656,7 @@ void NeuralNet::train(const vector<vector<float>>& input, const vector<vector<fl
 	}
 
 	float batchLoss = 0;
-	//clearWeightGradients();
+	clearWeightGradients();
 	HashUpdateTracker();
 	for (int i = 0; i < input.size(); i++) {
 		//Multithread this
@@ -664,7 +664,7 @@ void NeuralNet::train(const vector<vector<float>>& input, const vector<vector<fl
 		BackPropagate(output[i], i);
 		batchLoss += loss;
 	}
-	//applyWeightGradients();
+	applyWeightGradients();
 	if (DEBUG)
 		cout << "Batch Error: " << batchLoss / input.size() << endl;
 }
@@ -683,7 +683,7 @@ void NeuralNet::trainWithOneOutput(const vector<vector<float>>& input, const vec
 		}
 	}
 
-	//clearWeightGradients();
+	clearWeightGradients();
 	HashUpdateTracker();
 	for (int i = 0; i < input.size(); i++) {
 		//Multithread this
@@ -692,7 +692,7 @@ void NeuralNet::trainWithOneOutput(const vector<vector<float>>& input, const vec
 		output[out[i].index] = out[i].val;
 		BackPropagate(output, i);
 	}
-	//applyWeightGradients();
+	applyWeightGradients();
 }
 
 void NeuralNet::trainTillError(const vector<vector<float>>& input, const vector<vector<float>>& output, int numOfBatches, int numOfEpochs, float targetError) {
@@ -717,6 +717,7 @@ void NeuralNet::trainTillError(const vector<vector<float>>& input, const vector<
 			clearWeightGradients();
 			HashUpdateTracker();
 			for (int k = 0; k < batchSize; k++) {
+				if (j * batchSize + k > input.size()) break;
 				//Multithread this
 				feedForward(input[j * batchSize + k], k);
 				BackPropagate(output[j * batchSize + k], k);
@@ -996,10 +997,20 @@ void NeuralNet::clearWeightGradients() {
 				}
 			}
 		}
+		for (int j = 0; j < net[i].convoBiasGradient.size(); j++) {
+			net[i].convoBiasGradient[j] = 0;
+		}
+		for (int j = 0; j < net[i].filters.size(); j++) {
+			for (int k = 0; k < net[i].filters[j].gradients.size(); k++) {
+				net[i].filters[j].gradients[k] = 0;
+			}
+		}
 	}
 }
 
 void NeuralNet::applyWeightGradients() {
+	float batchsize = net[0].neuron[0].activation.size();
+	float gr = 1.f * growthRate / batchsize;
 	for (int i = 1; i < net.size(); i++) {
 		for (int j = 0; j < net[i].size(); j++) {
 			//If the weights connecting to this neuron is the same number as the number of neurons in the previous layer(ie, not the bias neuron)
@@ -1009,8 +1020,16 @@ void NeuralNet::applyWeightGradients() {
 					for (int l = 0; l < net[i].neuron[j].activation.size(); l++) {
 						totalGradient += net[i].neuron[j].weightGradient[k][l];
 					}
-					net[i].neuron[j].weight[k] -= totalGradient * growthRate;
+					net[i].neuron[j].weight[k] -= totalGradient * gr;
 				}
+			}
+		}
+		for (int j = 0; j < net[i].convoBiasGradient.size(); j++) {
+			net[i].convoBias[j] -= net[i].convoBiasGradient[j] * gr;
+		}
+		for (int j = 0; j < net[i].filters.size(); j++) {
+			for (int k = 0; k < net[i].filters[j].gradients.size(); k++) {
+				net[i].filters[j].val[k] -= net[i].filters[j].gradients[k] * gr;
 			}
 		}
 	}
