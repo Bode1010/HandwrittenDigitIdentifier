@@ -2,6 +2,7 @@
 #include "NeuralNetUtil.h"
 #include "NeuralNetwork.h"
 #include <fstream>
+#include <deque>
 
 //v0.1: Simple feed forward and backprop. Working with xor problem and carTrack problem.
 //v0.1.1: Convolutions implemented. Working with digit recognition.
@@ -25,7 +26,7 @@ class NeuralNet : public NeuralNetwork
 	//Variables
 	int baseT = 50;
 	float lambda = 1.1;
-	float growthRate = 0.1;
+	float growthRate = 0.04;
 	float adaptiveLearningRateHyperparameter = 0.9;
 	float momentumHyperparameter = 0.9;
 	//number of hash table updates

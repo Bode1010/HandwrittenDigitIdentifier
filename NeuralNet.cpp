@@ -657,8 +657,8 @@ void NeuralNet::train(const vector<vector<float>>& input, const vector<vector<fl
 
 	float batchLoss = 0;
 	clearWeightGradients();
-	HashUpdateTracker();
 	for (int i = 0; i < input.size(); i++) {
+		HashUpdateTracker();
 		//Multithread this
 		feedForward(input[i], i);
 		BackPropagate(output[i], i);
@@ -684,9 +684,9 @@ void NeuralNet::trainWithOneOutput(const vector<vector<float>>& input, const vec
 	}
 
 	clearWeightGradients();
-	HashUpdateTracker();
 	for (int i = 0; i < input.size(); i++) {
 		//Multithread this
+		HashUpdateTracker();
 		feedForward(input[i], i);
 		vector<float> output = getOutput(i);
 		output[out[i].index] = out[i].val;
@@ -697,6 +697,7 @@ void NeuralNet::trainWithOneOutput(const vector<vector<float>>& input, const vec
 
 void NeuralNet::trainTillError(const vector<vector<float>>& input, const vector<vector<float>>& output, int numOfBatches, int numOfEpochs, float targetError) {
 	int batchSize = input.size() / numOfBatches;
+	int movingAverageSize = 4;
 	//Check if input and output batches are the same size
 	if (input.size() != output.size()) {
 		cout << "Error: Input size does not match output size. TrainTillError function" << endl;
@@ -711,21 +712,31 @@ void NeuralNet::trainTillError(const vector<vector<float>>& input, const vector<
 		}
 	}
 
+	deque<float> batchErrorMovingAverageList;
+	float batchErrorMovingAverage;
 	for (int i = 0; i < numOfEpochs; i++) {
 		for (int j = 0; j < numOfBatches; j++) {
 			float batchLoss = 0.f;
 			clearWeightGradients();
-			HashUpdateTracker();
 			for (int k = 0; k < batchSize; k++) {
 				if (j * batchSize + k > input.size()) break;
 				//Multithread this
+				HashUpdateTracker();
 				feedForward(input[j * batchSize + k], k);
 				BackPropagate(output[j * batchSize + k], k);
 				batchLoss += loss;
 			}
 			applyWeightGradients();
-			if (DEBUG) cout << "Batch Error: " << batchLoss / batchSize << endl;
-			if (batchLoss / batchSize < targetError) return;
+			batchErrorMovingAverageList.push_back(batchLoss / batchSize);
+			if(batchErrorMovingAverageList.size() > movingAverageSize)
+				batchErrorMovingAverageList.pop_front();
+			batchErrorMovingAverage = 0;
+			for (int k = 0; k < batchErrorMovingAverageList.size(); k++) {
+				batchErrorMovingAverage += batchErrorMovingAverageList[k];
+			}
+			batchErrorMovingAverage /= batchErrorMovingAverageList.size();
+			if (DEBUG) cout << "Moving Batch Error: " << batchErrorMovingAverage << endl;
+			if (batchErrorMovingAverage < targetError) return;
 		}
 	}
 }
