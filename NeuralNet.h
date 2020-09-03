@@ -11,15 +11,15 @@
 //v0.3: Multithread and batchNorm implemented and tested.
 //current version: v0.1.1
 
+//Upsample layers are unpooling layers (as opposed to transposed convolution upsampling) and dont use bilinear interpolation.
+
 //ToDo:
 //Put stops if the net was initialized without any layers, or if i try to backpropagate without feed forwarding first.
-//Make "NextLayerDense()" function work in "DenseBackwardPass()" function like it does in "ConvBackwardPass()"
-//Make sure I'm not currently calling the "NextLayerConvo()" function for every neuron in a dense layer, because that would be foolish and there's\
-No way I would have made that mistake right?
-//I should be making all these edits to the file in the main HashNN program I wrote not here. smh 
+//When backpropagating in dense layers set all active neurons back to inactive! or check if this is already done. It should be
+//Save and load upsample layers
 
 //If I stopped programming in an uncompilable state, Where did I stop last?
-//Program Complete
+//GetGradientIfNextLayerConvolutional() in NeuralNet.cpp doesnt work lol
 
 class NeuralNet : public NeuralNetwork
 {
@@ -59,6 +59,10 @@ class NeuralNet : public NeuralNetwork
 	void ConvBackwardPass(int layerIndex, int pipeIndex);
 	//Foward pass through a Convolutional layer
 	void ConvForwardPass(int layerIndex, int pipeIndex);
+	//Backward pass through an upsampling layer
+	void UpsampleBackwardPass(int layerIndex, int pipeIndex);
+	//Forward pass through an upsampling layer
+	void UpsampleForwardPass(int layerIndex, int pipeIndex);
 	//Determines which layers get what kind of Back pass. eg dense layers get dense back pass
 	void startNetwork(vector<Layer>& layout);
 	//Clears the gradients of every weight 
@@ -76,6 +80,10 @@ class NeuralNet : public NeuralNetwork
 	vector<float> GetGradientIfNextLayerDense(int layerIndex, int pipe);
 	//Calculates the gradients of this layer if the next layer is convolutional
 	vector<float> GetGradientIfNextLayerConvo(int layerIndex, int pipe);
+	//Calculates the gradients of this layer if the next layer is upsample
+	vector<float> GetGradientIfNextLayerUpsample(int layer, int pipe);
+	//Change last layer into images
+	vector<vector<float>> ConvertPreviousLayertoImages(int layerIndex, int pipe);
 
 	//Debug functions
 	void DebugWeights();

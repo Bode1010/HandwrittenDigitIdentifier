@@ -38,7 +38,7 @@ enum ActivationFunction {
 };
 
 enum LayerType {
-	DENSE, CONVO, GRU
+	DENSE, CONVO, GRU, UPSAMPLE
 };
 
 struct Image {
@@ -79,6 +79,10 @@ struct Layer {
 	Layer(LayerType l, int filterx, int filtery, int numOfFilters, ActivationFunction func, bool zeroPad, Layer* prevLayer);
 	//Used in creating convolutional layers that are preceded by convolutional layers with max pooling. DO NOT USE UNLESS THIS LAYER COMES AFTER A CONVOLUTIONAL LAYER. All the work of calculating image size will be done in code
 	Layer(LayerType l, int filterx, int filtery, int numOfFilters, ActivationFunction func, bool zeroPad, int maxPoolxyStride, Layer* prevLayer);
+	//Upsampling layer, transfoms image into bigger image. If previous layer was dense, you will have to specify the image length, width and depth. same depth as prev layer
+	Layer(LayerType l, int prevImageLength, int prevImageWidth, int prevImageDepth, int targetLength, int targetWidth);
+	//Upsampling layer, if it follows a convolutional layer there is no need to specify image length width and depth. It has the depth of prev layer
+	Layer(LayerType l, Layer* prevLayer, int targetLength, int targetWidth);
 
 	//public vars
 	int neuronLimit = 99999;
@@ -93,6 +97,8 @@ struct Layer {
 	int prevImgLen = 0, prevImgWid = 0, prevImgDepth = 0, maxPoolx = -1, maxPooly = -1, maxPoolStride = -1;
 	//Stores the image length and width before max pooling
 	int imgLen = 0, imgWid = 0;
+	//When upsampling, multiply prevImgLen by scaleX to get new image length
+	int scaleX = 0, scaleY = 0;
 	bool zeroPad = false;
 	//To store the pre max pooling biases of a convolutional layer. Randomized btw -1 and 1 at the beginning
 	vector<float> convoBias;
@@ -101,6 +107,9 @@ struct Layer {
 	vector<float> convoBiasMomentum;
 	//To store the indexes of the neurons with the max values for each image during max pooling. Used in backprop
 	vector<vector<vector<int>>> maxNeuronIndex;
+	
+	//Upsampling vars: In my upsampling layers, I am going to need the dimensions of a filter but not an actual filter, hence "FilterCase" versus actual filter
+	int filterCaseX = 0, filterCaseY = 0;
 
 
 private:
@@ -139,4 +148,11 @@ public:
 	static Layer Convo(int filterx, int filtery, int numOfFilters, ActivationFunction func, bool zeroPad, int maxPoolxyStride, Layer* prevLayer);
 	static Layer Convo(int filterx, int filtery, int numOfFilters, ActivationFunction func, int previmageLength, int previmageWidth, int prevImageDepthorNumOfFilters, bool zeroPad);
 	static Layer Convo(int filterx, int filtery, int numOfFilters, ActivationFunction func, int previmageLength, int previmageWidth, int prevImageDepthorNumOfFilters, bool zeroPad, int maxPoolFilterXYStride);
+	static Layer Upsample(Layer* prevLayer, int targetLength, int targetWidth);
+	static Layer Upsample(int prevImageLength, int prevImageWidth, int prevImageDepth, int targetLength, int targetWidth);
+	static vector<float> CreateFractionalImage(int, int, int, int);
+	static int min3(int, int, int);
+
+	//original image, dimensions of the image and scale factors on both axes
+	static vector<float> UpsampleImage(vector<float> prevImage, int prevImageX, int prevImageY,int sclX, int sclY);
 };

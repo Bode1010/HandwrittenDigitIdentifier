@@ -48,7 +48,7 @@ void NeuralNet::startNetwork(vector<Layer>& layout) {
 		//for every neuron.
 		for (int j = 0; j < net[i].size(); j++) {
 			//Not(If its the input layer, or its the last neuron and its not the last layer, or if its a convolutional layer)
-			if (!(i == 0) && !(j == net[i].size() - 1 && i < net.size() - 1) && !(net[i].getLayerType() == CONVO)) {
+			if (!(i == 0) && !(j == net[i].size() - 1 && i < net.size() - 1) && !(net[i].getLayerType() == CONVO) && !(net[i].getLayerType() == UPSAMPLE)) {
 				vector<float> weight;
 				vector<unsigned> intWeights;
 				for (int k = 0; k < net[i - 1].size(); k++) {
@@ -66,7 +66,7 @@ void NeuralNet::startNetwork(vector<Layer>& layout) {
 			}
 		}
 		//dont hash input layer ir convolutional layers
-		if (i != 0 && net[i].getLayerType() != CONVO) net[i].HashTable.Hash(weightArray);
+		if (i != 0 && net[i].getLayerType() != CONVO && net[i].getLayerType() != UPSAMPLE) net[i].HashTable.Hash(weightArray);
 	}
 }
 
@@ -97,6 +97,7 @@ void NeuralNet::feedForward(vector<float> input, int pipe) {
 	for (int i = 1; i < net.size(); i++) {
 		if (net[i].getLayerType() == DENSE) DenseForwardPass(i, pipe);
 		else if (net[i].getLayerType() == CONVO) ConvForwardPass(i, pipe);
+		else if (net[i].getLayerType() == UPSAMPLE) UpsampleForwardPass(i, pipe);
 	}
 }
 
@@ -134,7 +135,8 @@ void NeuralNet::BackPropagate(const vector<float>& output, int pipe) {
 	if (loss > 0) {
 		for (int i = outLayIndex; i > 0; i--) {
 			if (net[i].getLayerType() == DENSE) DenseBackwardPass(i, pipe);
-			if (net[i].getLayerType() == CONVO) ConvBackwardPass(i, pipe);
+			else if (net[i].getLayerType() == CONVO) ConvBackwardPass(i, pipe);
+			else if (net[i].getLayerType() == UPSAMPLE) UpsampleBackwardPass(i, pipe);
 		}
 	}
 
@@ -208,16 +210,19 @@ void NeuralNet::DenseBackwardPass(int layerIndex, int pipe) {
 	//Update Gradient of neurons in current layer
 	if (layerIndex != net.size() - 1) {
 		vector<float> gradientAtThisPipe;
-		if (net[layerIndex + 1].getLayerType() != CONVO) {
-			gradientAtThisPipe = GetGradientIfNextLayerDense(layerIndex, pipe);
-		}
-		else {
+		if (net[layerIndex + 1].getLayerType() == CONVO) {
 			gradientAtThisPipe = GetGradientIfNextLayerConvo(layerIndex, pipe);
+		}
+		else if(net[layerIndex + 1].getLayerType() == UPSAMPLE) {
+			gradientAtThisPipe = GetGradientIfNextLayerUpsample(layerIndex, pipe);
+		}
+		else if (net[layerIndex + 1].getLayerType() == DENSE) {
+			gradientAtThisPipe = GetGradientIfNextLayerDense(layerIndex, pipe);
 		}
 
 		if (gradientAtThisPipe.size() != net[layerIndex].neuron.size()) {
 			cout << "Gradient dimensions not equal to layer dimensions. check convsgdbackpass funciton. Layer " << layerIndex << endl;
-			cout << "Gradient At this pipe: " << gradientAtThisPipe.size() << endl;
+			cout << "Gradient At this pipe size: " << gradientAtThisPipe.size() << endl;
 			cout << "Actual layer size: " << net[layerIndex].neuron.size() << endl;
 			return;
 		}
@@ -244,7 +249,7 @@ void NeuralNet::DenseBackwardPass(int layerIndex, int pipe) {
 }
 
 void NeuralNet::ConvForwardPass(int layerIndex, int pipe) {
-	//Check if my calculated last layer image size is actually the last layer image size
+	//Check if my calculated last layer image size + bias is actually the last layer image size
 	if (net[layerIndex].prevImgLen * net[layerIndex].prevImgDepth * net[layerIndex].prevImgWid + 1 != net[layerIndex - 1].size()) {
 		cout << "Calculated prev layer is not the size of actual prev layer, check conv forward pass. Layer " << layerIndex << endl;
 		cout << "Calculated: " << net[layerIndex].prevImgLen * net[layerIndex].prevImgDepth * net[layerIndex].prevImgWid + 1 << endl;
@@ -253,13 +258,8 @@ void NeuralNet::ConvForwardPass(int layerIndex, int pipe) {
 	}
 
 	//Seperate data from last layer into <depth> number of images
-	vector<vector<float>> lastLayerImages;
-	for (int i = 0; i < net[layerIndex].prevImgDepth; i++) {
-		lastLayerImages.push_back(vector<float>());
-		for (int j = 0; j < net[layerIndex].prevImgLen * net[layerIndex].prevImgWid; j++) {
-			lastLayerImages.back().push_back(net[layerIndex - 1].neuron[j].activation[pipe]);
-		}
-	}
+	vector<vector<float>> lastLayerImages = ConvertPreviousLayertoImages(layerIndex, pipe);
+
 
 	int topPad = 0, rightPad = 0, bottomPad = 0, leftPad = 0;
 	//If zero padding is activated, calculate how much it needs to be padded and where to add the padding
@@ -335,8 +335,11 @@ void NeuralNet::ConvForwardPass(int layerIndex, int pipe) {
 	}
 
 	//Put values into neurons
-	if (convolved[0].size() * convolved.size() + 1 != net[layerIndex].size()) {
-		cout << "The size I predicted this layer to have in its constructor is not the size after calculation in conv feedforward. please figure out what is wrong" << endl;
+	if (convolved[0].size() * convolved.size() + 1 != net[layerIndex].size()
+		&& (convolved[0].size() * convolved.size() != net[layerIndex].size() && layerIndex == net.size() - 1)) {
+		cout << "The size I predicted this layer to have in its constructor is not the size after calculation in conv forward pass. please figure out what is wrong" << endl;
+		cout << "Predicted size: " << convolved[0].size() * convolved.size() + 1 << endl;
+		cout << "Actual size of conv layer: " << net[layerIndex].size() << endl;
 	}
 	for (int i = 0; i < convolved.size(); i++) {
 		for (int j = 0; j < convolved[i].size(); j++) {
@@ -351,16 +354,18 @@ void NeuralNet::ConvBackwardPass(int layerIndex, int pipe) {
 	//If the next layer isnt a conv layer, this layer neurons update using dense back pass
 	if (layerIndex != net.size() - 1) {
 		vector<float> gradientAtThisPipe;
-		if (net[layerIndex + 1].getLayerType() != CONVO) {
-			gradientAtThisPipe = GetGradientIfNextLayerDense(layerIndex, pipe);
-		}
-		//If the next layer is a conv layer, use filter of next layer and dActivation of next layer to calc this layer input gradient
-		else {
+		if (net[layerIndex + 1].getLayerType() == CONVO) {
 			gradientAtThisPipe = GetGradientIfNextLayerConvo(layerIndex, pipe);
+		}
+		else if (net[layerIndex + 1].getLayerType() == UPSAMPLE) {
+			gradientAtThisPipe = GetGradientIfNextLayerUpsample(layerIndex, pipe);
+		}
+		else if (net[layerIndex + 1].getLayerType() == DENSE) {
+			gradientAtThisPipe = GetGradientIfNextLayerDense(layerIndex, pipe);
 		}
 
 		if (gradientAtThisPipe.size() != net[layerIndex].neuron.size()) {
-			cout << "Gradient dimensions not equal to layer dimensions. check convsgdbackpass funciton. Layer " << layerIndex << endl;
+			cout << "Gradient dimensions not equal to layer dimensions. check convbackpass funciton. Layer " << layerIndex << endl;
 			cout << "Gradient At this pipe: " << gradientAtThisPipe.size() << endl;
 			cout << "Actual layer size: " << net[layerIndex].neuron.size() << endl;
 			return;
@@ -485,6 +490,55 @@ void NeuralNet::ConvBackwardPass(int layerIndex, int pipe) {
 	}
 }
 
+void NeuralNet::UpsampleForwardPass(int layerIndex, int pipe) {
+	//Seperate data from last layer into <depth> number of images
+	vector<vector<float>> lastLayerImages = ConvertPreviousLayertoImages(layerIndex, pipe);
+
+	//for each image, expand them using upsampling method
+	vector<vector<float>> thisLayerImages(lastLayerImages.size());
+	int prevLen = net[layerIndex].prevImgLen;
+	int prevWid = net[layerIndex].prevImgWid;
+	int sclX = net[layerIndex].scaleX;
+	int sclY = net[layerIndex].scaleY;
+	for (int i = 0; i < lastLayerImages.size(); i++) {
+		thisLayerImages[i] = Util::UpsampleImage(lastLayerImages[i], prevLen, prevWid, sclX, sclY);
+	}
+
+	//put new images back into appropriate layer
+	for (int i = 0; i < thisLayerImages.size(); i++) {
+		for (int j = 0; j < thisLayerImages[0].size(); j++) {
+			net[layerIndex].neuron[i * thisLayerImages[0].size() + j].activation[pipe] = thisLayerImages[i][j];
+			net[layerIndex].neuron[i * thisLayerImages[0].size() + j].setActive(pipe, 1);
+		}
+	}
+}
+
+void NeuralNet::UpsampleBackwardPass(int layerIndex, int pipe) {
+	//Update Gradient of neurons in current layer
+	if (layerIndex != net.size() - 1) {
+		vector<float> gradientAtThisPipe;
+		if (net[layerIndex + 1].getLayerType() == CONVO) {
+			gradientAtThisPipe = GetGradientIfNextLayerConvo(layerIndex, pipe);
+		}
+		else if (net[layerIndex + 1].getLayerType() == UPSAMPLE) {
+			gradientAtThisPipe = GetGradientIfNextLayerUpsample(layerIndex, pipe);
+		}
+		else if (net[layerIndex + 1].getLayerType() == DENSE) {
+			gradientAtThisPipe = GetGradientIfNextLayerDense(layerIndex, pipe);
+		}
+
+		if (gradientAtThisPipe.size() != net[layerIndex].neuron.size()) {
+			cout << "Gradient dimensions not equal to layer dimensions. check convsgdbackpass funciton. Layer " << layerIndex << endl;
+			cout << "Gradient At this pipe: " << gradientAtThisPipe.size() << endl;
+			cout << "Actual layer size: " << net[layerIndex].neuron.size() << endl;
+			return;
+		}
+		for (int i = 0; i < gradientAtThisPipe.size(); i++) {
+			net[layerIndex].neuron[i].gradient[pipe] = gradientAtThisPipe[i];
+		}
+	}
+}
+
 //Under the assumption that we have already checked to ensure that this isnt the last layer and the next layer is dense
 vector<float> NeuralNet::GetGradientIfNextLayerDense(int layerIndex, int pipe) {
 	//Every neuron change is the sum of (the weight to the next neuron) * (the dActiavation of that neuron) * (Its gradient) for every neuron in the next layer except bias
@@ -521,7 +575,12 @@ vector<float> NeuralNet::GetGradientIfNextLayerConvo(int layerIndex, int pipe) {
 	}
 
 	//get gradient of next layer, multiply by their dActivate
-	int imageDim = 1.f * (nextLayer.size() - 1) / depth;
+	int imageDim;
+	if(layerIndex + 1 != net.size() - 1)
+		imageDim = 1.f * (nextLayer.size() - 1) / depth;
+	else 
+		imageDim = 1.f * (nextLayer.size()) / depth;
+
 	vector<vector<float>> output(depth, vector<float>(imageDim));
 	for (int i = 0; i < depth; i++) {
 		for (int j = 0; j < imageDim; j++) {
@@ -617,12 +676,50 @@ vector<float> NeuralNet::GetGradientIfNextLayerConvo(int layerIndex, int pipe) {
 	return inputGradient;
 }
 
+vector<float> NeuralNet::GetGradientIfNextLayerUpsample(int layerIndex, int pipe) {
+	//Using the scale dimensions find the neuron in the previous layer the neuron in the current layer maps to and add its gradient to the neuron in the prev layer
+	Layer curLayer = net[layerIndex];
+	//size of current layer minus the bias
+	vector<float> gradient(curLayer.size());
+	int length = curLayer.imgLen;
+	int width = curLayer.imgWid;
+	Layer nextLayer = net[layerIndex + 1];
+	int depth = nextLayer.prevImgDepth;
+	int scaleX = nextLayer.scaleX;
+	int scaleY = nextLayer.scaleY;
+
+	//For every image in the layer!!!!
+	for (int h = 0; h < depth; h++) {
+		for (int i = 0; i < width; i++) {
+			for (int j = 0; j < scaleY; j++) {
+				for (int k = 0; k < length; k++) {
+					for (int l = 0; l < scaleX; l++) {
+						gradient[(h * length * width) + (i * length) + k] += nextLayer.neuron[(h * length * scaleX * width * scaleY) + (i * scaleY + j) * (length * scaleX) + (k * scaleX + l)].gradient[pipe];
+					}
+				}
+			}
+		}
+	}
+	return gradient;
+}
+
+vector<vector<float>> NeuralNet::ConvertPreviousLayertoImages(int layerIndex, int pipe) {
+	vector<vector<float>> lastLayerImages;
+	for (int i = 0; i < net[layerIndex].prevImgDepth; i++) {
+		lastLayerImages.push_back(vector<float>());
+		for (int j = 0; j < net[layerIndex].prevImgLen * net[layerIndex].prevImgWid; j++) {
+			lastLayerImages.back().push_back(net[layerIndex - 1].neuron[j].activation[pipe]);
+		}
+	}
+	return lastLayerImages;
+}
+
 void NeuralNet::UpdateHashTables() {
 	//Multithread this
 	//for every layer
 	for (unsigned i = 1; i < net.size(); i++) {
 		vector<vector<unsigned>> weightArr;
-		if (net[i].getLayerType() != CONVO) {
+		if (net[i].getLayerType() != CONVO && net[i].getLayerType() != UPSAMPLE) {
 			//for every neuron except the bias
 			for (unsigned j = 0; j < net[i].size(); j++) {
 				//bias is either last neuron on every row or none existen in the last row

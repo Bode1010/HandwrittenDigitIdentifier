@@ -10,6 +10,9 @@
 //If filters are becoming nan(ind), one of the matrixes updating them is all zeros, you might want to check convbackprop, nextLayerDense or nextLayerConv
 //If the vizualization is too slow, its cuz im repeating calculations that only need to be done once in the vizualization process. Remember to take those out during refactoring
 
+//Make sure code still runs
+//Write upsampleforwardpass function and getgradientifnextlayerupsample() functions in neuralnet.cpp
+
 int reverseInt(int i) {
 	char c1, c2, c3, c4;
 	c1 = i & 255;
@@ -37,7 +40,7 @@ void ReadDataset(string fileName, vector<vector<float>>& dataset) {
 	inFile.read((char*)&columns, sizeof(int));
 	columns = reverseInt(columns);
 
-	numOfItems = 100;
+	numOfItems = 1000;
 	dataset = vector<vector<float>>(numOfItems);
 
 	unsigned char temp;
@@ -71,7 +74,7 @@ void ReadLabels(string fileName, vector<vector<float>>& labels) {
 }
 
 int main() {
-	srand(0);
+	/*srand(0);
 	//Read dataset from file. Images are 28 by 28
 	vector<vector<float>>* dataset = new vector<vector<float>>();
 	vector<vector<float>>* label = new vector<vector<float>>();
@@ -84,6 +87,7 @@ int main() {
 	//Back to back conv layers don't need image size or previous layer depth specified if a pointer to previous convolutional layer is given
 	Layer h2 = Util::Convo(5, 5, 12, RELU, false, 2, &h1);
 	Layer h3 = Util::Dense(75, RELU, 0, 1, 75);
+	Layer h4 = Util::Upsample(&h2, 2, 2);
 	Layer output = Util::Dense(10, SOFTMAX, 0, 1, 10);
 
 	vector<Layer> Layout = { input, h1, h3, output };
@@ -100,13 +104,37 @@ int main() {
 	//myNet.save("Identify7.hcnn");
 	//myNet.load("TrainedIdentifier.hcnn");
 
-	/*******Draw to Screen**********/
+	/*******Draw to Screen**********
 	DisplayCnn artist(myNet, (*dataset), 28, 28);
 	artist.Draw();
-	/******************************/
+	/******************************
 	
 	delete(dataset);
-	delete(label);
+	delete(label);*/
+
+	//Read dataset from file
+	vector<vector<float>>* dataset = new vector<vector<float>>();
+	ReadDataset("t10k-images.idx3-ubyte", *dataset);
+
+	//Neural network architecture: Image is black and white so its initial depth is 1, afterwards its depth will be the num of filters from the prev layer
+	Layer input = Util::Dense(28 * 28, NONE, 0, 1, 28 * 28);
+	Layer h1 = Util::Convo(3, 3, 16, RELU, 28, 28, 1, true, 2);
+	Layer h2 = Util::Convo(3, 3, 8, RELU, true, 2, &h1);
+	Layer h3 = Util::Convo(3, 3, 8, RELU, true, &h2);
+	Layer h4 = Util::Convo(3, 3, 8, RELU, true, &h3);
+	Layer h10 = Util::Convo(3, 3, 8, RELU, true, &h4);
+	//Layer h5 = Util::Upsample(&h4, 2, 2);
+	//Layer h6 = Util::Convo(3, 3, 8, RELU, true, &h5);
+	Layer h7 = Util::Upsample(&h10, 2, 2);
+	Layer h8 = Util::Convo(3, 3, 16, RELU, true, &h7);
+	Layer h9 = Util::Upsample(&h8, 2, 2);
+	Layer output = Util::Convo(3, 3, 1, RELU, true, &h9);
+
+	vector<Layer> Layout = { input, h1, h2, h3, h4, h10, h7, h8, h9, output };
+	NeuralNet myNet(Layout);
+	myNet.setDebugFlag(true);
+	myNet.trainTillError(*dataset, *dataset, 100, 10, 0.1);
+	
 
 	std::cout << "Program Terminated" << std::endl;
 	return 0;

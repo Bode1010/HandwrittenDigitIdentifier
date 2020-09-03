@@ -196,9 +196,58 @@ Layer::Layer(LayerType l, int filterx, int filtery, int numOfFilters, Activation
 	Util::Randomize(convoBias);
 }
 
+vector<int> calculatePrevImageSizeIfPrevLayerWasUpsample(Layer* prevLayer) {
+	vector<int> result(2);
+	result[0] = prevLayer->prevImgLen * prevLayer->scaleX;
+	result[1] = prevLayer->prevImgWid * prevLayer->scaleY;
+	return result;
+}
+
+vector<int> calculatePrevImageSizeIfPrevLayerWasConvo(Layer* prevLayer) {
+	vector<int> result(2);
+	//If previous layer was zero padded
+	if (prevLayer->zeroPad) {
+		//If the prev layer was max pooled
+		if (prevLayer->maxPoolStride != -1) {
+			int PIL, PIW;
+			PIL = prevLayer->prevImgLen;
+			PIW = prevLayer->prevImgWid;
+			float t = 1.f * PIL / prevLayer->maxPoolStride;
+			float u = 1.f * PIW / prevLayer->maxPoolStride;
+			result[0] = (t > (int)t) ? t + 1 : t;
+			result[1] = (u > (int)u) ? u + 1 : t;
+		}
+		//else
+		else {
+			result[0] = prevLayer->prevImgLen;
+			result[1] = prevLayer->prevImgWid;
+		}
+
+	}
+	//If it was not zero padded
+	else {
+		//If the prev layer was max pooled
+		if (prevLayer->maxPoolStride != -1) {
+			int PIL, PIW;
+			PIL = prevLayer->prevImgLen - prevLayer->filters[0].xDim + 1;
+			PIW = prevLayer->prevImgWid - prevLayer->filters[0].xDim + 1;
+			float t = 1.f * PIL / prevLayer->maxPoolStride;
+			float u = 1.f * PIW / prevLayer->maxPoolStride;
+			result[0] = (t > (int)t) ? t + 1 : t;
+			result[1] = (u > (int)u) ? u + 1 : t;
+		}
+		//else
+		else {
+			result[0] = prevLayer->prevImgLen - prevLayer->filters[0].xDim + 1;
+			result[1] = prevLayer->prevImgWid - prevLayer->filters[0].xDim + 1;
+		}
+	}
+	return result;
+}
+
 Layer::Layer(LayerType l, int filterx, int filtery, int numOfFilters, ActivationFunction func, bool zPad, Layer* prevLayer) {
 	try {
-		if (prevLayer->getLayerType() != CONVO) {
+		if (prevLayer->getLayerType() != CONVO && prevLayer->getLayerType() != UPSAMPLE) {
 			cout << prevLayer->getLayerType() << endl;
 			throw - 3;
 		}
@@ -214,45 +263,19 @@ Layer::Layer(LayerType l, int filterx, int filtery, int numOfFilters, Activation
 
 	actFunc = func;
 	zeroPad = zPad;
-	prevImgDepth = prevLayer->filters.size();
 
 	//Calculate dimensions of prev layer
-	//If previous layer was zero padded
-	if (prevLayer->zeroPad) {
-		//If the prev layer was max pooled
-		if (prevLayer->maxPoolStride != -1) {
-			int PIL, PIW;
-			PIL = prevLayer->prevImgLen;
-			PIW = prevLayer->prevImgWid;
-			float t = 1.f * PIL / prevLayer->maxPoolStride;
-			float u = 1.f * PIW / prevLayer->maxPoolStride;
-			prevImgLen = (t > (int)t) ? t + 1 : t;
-			prevImgWid = (u > (int)u) ? u + 1 : t;
-		}
-		//else
-		else {
-			prevImgLen = prevLayer->prevImgLen;
-			prevImgWid = prevLayer->prevImgWid;
-		}
-
+	if (prevLayer->getLayerType() == CONVO) {
+		vector<int> prevSize = calculatePrevImageSizeIfPrevLayerWasConvo(prevLayer);
+		prevImgLen = prevSize[0];
+		prevImgWid = prevSize[1];
+		prevImgDepth = prevLayer->filters.size();
 	}
-	//If it was not zero padded
-	else {
-		//If the prev layer was max pooled
-		if (prevLayer->maxPoolStride != -1) {
-			int PIL, PIW;
-			PIL = prevLayer->prevImgLen - prevLayer->filters[0].xDim + 1;
-			PIW = prevLayer->prevImgWid - prevLayer->filters[0].xDim + 1;
-			float t = 1.f * PIL / prevLayer->maxPoolStride;
-			float u = 1.f * PIW / prevLayer->maxPoolStride;
-			prevImgLen = (t > (int)t) ? t + 1 : t;
-			prevImgWid = (u > (int)u) ? u + 1 : t;
-		}
-		//else
-		else {
-			prevImgLen = prevLayer->prevImgLen - prevLayer->filters[0].xDim + 1;
-			prevImgWid = prevLayer->prevImgWid - prevLayer->filters[0].xDim + 1;
-		}
+	else if (prevLayer->getLayerType() == UPSAMPLE) {
+		vector<int> prevSize = calculatePrevImageSizeIfPrevLayerWasUpsample(prevLayer);
+		prevImgLen = prevSize[0];
+		prevImgWid = prevSize[1];
+		prevImgDepth = prevLayer->prevImgDepth;
 	}
 
 	/*Set size of layer*/
@@ -275,7 +298,7 @@ Layer::Layer(LayerType l, int filterx, int filtery, int numOfFilters, Activation
 
 Layer::Layer(LayerType l, int filterx, int filtery, int numOfFilters, ActivationFunction func, bool zPad, int maxPoolxystride, Layer* prevLayer) {
 	try {
-		if (prevLayer->getLayerType() != CONVO) {
+		if (prevLayer->getLayerType() != CONVO && prevLayer->getLayerType() != UPSAMPLE) {
 			cout << prevLayer->getLayerType() << endl;
 			throw - 3;
 		}
@@ -291,45 +314,19 @@ Layer::Layer(LayerType l, int filterx, int filtery, int numOfFilters, Activation
 
 	actFunc = func;
 	zeroPad = zPad;
-	prevImgDepth = prevLayer->filters.size();
 
 	//Calculate dimensions of prev layer
-	//If previous layer was zero padded
-	if (prevLayer->zeroPad) {
-		//If the prev layer was max pooled
-		if (maxPoolStride != -1) {
-			int PIL, PIW;
-			PIL = prevLayer->prevImgLen;
-			PIW = prevLayer->prevImgWid;
-			float t = 1.f * PIL / prevLayer->maxPoolStride;
-			float u = 1.f * PIW / prevLayer->maxPoolStride;
-			prevImgLen = (t > (int)t) ? t + 1 : t;
-			prevImgWid = (u > (int)u) ? u + 1 : t;
-		}
-		//else
-		else {
-			prevImgLen = prevLayer->prevImgLen;
-			prevImgWid = prevLayer->prevImgWid;
-		}
-
+	if (prevLayer->getLayerType() == CONVO) {
+		vector<int> prevSize = calculatePrevImageSizeIfPrevLayerWasConvo(prevLayer);
+		prevImgLen = prevSize[0];
+		prevImgWid = prevSize[1];
+		prevImgDepth = prevLayer->filters.size();
 	}
-	//If it was not zero padded
-	else {
-		//If the prev layer was max pooled
-		if (prevLayer->maxPoolStride != -1) {
-			int PIL, PIW;
-			PIL = prevLayer->prevImgLen - prevLayer->filters[0].xDim + 1;
-			PIW = prevLayer->prevImgWid - prevLayer->filters[0].xDim + 1;
-			float t = 1.f * PIL / prevLayer->maxPoolStride;
-			float u = 1.f * PIW / prevLayer->maxPoolStride;
-			prevImgLen = (t > (int)t) ? t + 1 : t;
-			prevImgWid = (u > (int)u) ? u + 1 : t;
-		}
-		//else
-		else {
-			prevImgLen = prevLayer->prevImgLen - prevLayer->filters[0].xDim + 1;
-			prevImgWid = prevLayer->prevImgWid - prevLayer->filters[0].xDim + 1;
-		}
+	else if (prevLayer->getLayerType() == UPSAMPLE) {
+		vector<int> prevSize = calculatePrevImageSizeIfPrevLayerWasUpsample(prevLayer);
+		prevImgLen = prevSize[0];
+		prevImgWid = prevSize[1];
+		prevImgDepth = prevLayer->prevImgDepth;
 	}
 
 	maxPoolx = maxPoolxystride;
@@ -352,6 +349,56 @@ Layer::Layer(LayerType l, int filterx, int filtery, int numOfFilters, Activation
 	mySize++;
 
 	Util::Randomize(convoBias);
+}
+
+Layer::Layer(LayerType l, int prevImageLength, int prevImageWidth, int prevImageDepth, int scalex, int scaley) {
+	prevImgLen = prevImageLength;
+	prevImgWid = prevImageWidth;
+	prevImgDepth = prevImageDepth;
+	scaleX = scalex;
+	scaleY = scaley;
+	imgLen = prevImageLength * scalex;
+	imgWid = prevImageWidth * scaley;
+	actFunc = NONE;
+	layType = l;
+	mySize = imgLen * imgWid * prevImgDepth + 1;
+}
+
+Layer::Layer(LayerType l, Layer* prevLayer, int scalex, int scaley) {
+	try {
+		if (prevLayer->getLayerType() != CONVO && prevLayer->getLayerType() != UPSAMPLE) {
+			cout << prevLayer->getLayerType() << endl;
+			throw - 3;
+		}
+	}
+	catch (int e) {
+		cout << "The layer pointer passed into the constructor of a convolutional layer isnt a convolutional layer. This is a fatal error. check your constructors" << endl;
+	}
+
+	//Calculate dimensions of prev layer
+	if (prevLayer->getLayerType() == CONVO) {
+		vector<int> prevSize = calculatePrevImageSizeIfPrevLayerWasConvo(prevLayer);
+		prevImgLen = prevSize[0];
+		prevImgWid = prevSize[1];
+		prevImgDepth = prevLayer->filters.size();
+	}
+	else if (prevLayer->getLayerType() == UPSAMPLE) {
+		vector<int> prevSize = calculatePrevImageSizeIfPrevLayerWasUpsample(prevLayer);
+		prevImgLen = prevSize[0];
+		prevImgWid = prevSize[1];
+		prevImgDepth = prevLayer->prevImgDepth;
+	}
+
+	actFunc = NONE;
+	layType = l;
+	scaleX = scalex;
+	scaleY = scaley;
+	imgLen = prevImgLen * scalex;
+	imgWid = prevImgWid * scaley;
+	mySize = imgLen * imgWid * prevImgDepth + 1;
+
+	filterCaseX = imgLen + 1 - prevImgLen;
+	filterCaseY = imgWid + 1 - prevImgWid;
 }
 
 vector<float> Util::Convolve(Image& image, Image& filter) {
@@ -459,6 +506,14 @@ Layer Util::Convo(int filterx, int filtery, int numOfFilters, ActivationFunction
 
 Layer Util::Convo(int filterx, int filtery, int numOfFilters, ActivationFunction func, int previmageLength, int previmageWidth, int prevImageDepthorNumOfFilters, bool zeroPad, int maxPoolFilterXYStride) {
 	return Layer(CONVO, filterx, filtery, numOfFilters, func, previmageLength, previmageWidth, prevImageDepthorNumOfFilters, zeroPad, maxPoolFilterXYStride);
+}
+
+Layer Util::Upsample(int prevImageLength, int prevImageWidth, int prevImageDepth, int targetLength, int targetWidth) {
+	return Layer(UPSAMPLE, prevImageLength, prevImageWidth, prevImageDepth, targetLength, targetWidth);
+}
+
+Layer Util::Upsample(Layer* prevLayer, int targetLength, int targetWidth) {
+	return Layer(UPSAMPLE, prevLayer, targetLength, targetWidth);
 }
 
 vector<float> Layer::inputAt(int x) {
@@ -585,4 +640,49 @@ void Util::rotate180(Image& image) {
 	reverseColumns(image);
 	transpose(image);
 	reverseColumns(image);
+}
+
+
+int Util::min3(int x, int y, int z) {
+	if (x < y) {
+		if (x < z) return x;
+		else return z;
+	}
+	else {
+		if (y < z) return y;
+		else return z;
+	}
+}
+
+vector<float> Util::CreateFractionalImage(int imgX, int imgY, int filterCaseX, int filterCaseY) {
+	vector<float> result(imgX * imgY);
+	for (int i = 0; i < imgY; i++) {
+		float firstNum;
+		for (int j = 0; j < imgX; j++) {
+			//If its the first number in a row
+			if (j == 0) {
+				firstNum = 1.f / min3(i + 1, imgY - i, filterCaseY);
+				result[i * imgX + j] = firstNum;
+			}
+			else {
+				result[i * imgX + j] = 1.f / min3(j + 1, imgX - j, filterCaseX) * firstNum;
+			}
+		}
+	}
+	return result;
+}
+
+vector<float> Util::UpsampleImage(vector<float> prevImage, int prevImageX, int prevImageY, int sclX, int sclY) {
+	vector<float> result;
+	for (int i = 0; i < prevImageY; i++) {
+		for (int j = 0; j < sclY; j++) {
+			for (int k = 0; k < prevImageX; k++) {
+				for (int l = 0; l < sclX; l++) {
+					result.push_back(prevImage[i * prevImageX + k]);
+				}
+			}
+		}
+	}
+
+	return result;
 }
