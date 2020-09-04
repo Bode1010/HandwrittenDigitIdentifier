@@ -528,7 +528,7 @@ void NeuralNet::UpsampleBackwardPass(int layerIndex, int pipe) {
 		}
 
 		if (gradientAtThisPipe.size() != net[layerIndex].neuron.size()) {
-			cout << "Gradient dimensions not equal to layer dimensions. check convsgdbackpass funciton. Layer " << layerIndex << endl;
+			cout << "Gradient dimensions not equal to layer dimensions. check upsampleBackPass funciton. Layer " << layerIndex << endl;
 			cout << "Gradient At this pipe: " << gradientAtThisPipe.size() << endl;
 			cout << "Actual layer size: " << net[layerIndex].neuron.size() << endl;
 			return;
@@ -889,6 +889,12 @@ void NeuralNet::save(string filename) {
 			outFile << net[i].prevImgWid << " " << net[i].prevImgDepth << " ";
 			outFile << net[i].zeroPad << " " << net[i].maxPoolStride << endl;
 		}
+		else if (net[i].getLayerType() == UPSAMPLE) {
+			outFile << net[i].getLayerType() << " " << net[i].scaleX << " ";
+			outFile << net[i].scaleY << " " << net[i].prevImgLen << " ";
+			outFile << net[i].prevImgWid << " " << net[i].prevImgDepth << " ";
+			outFile << endl;
+		}
 	}
 
 	//Write layer values
@@ -900,7 +906,7 @@ void NeuralNet::save(string filename) {
 				for (int k = 0; k < tableHashes[j].size(); k++) {
 					outFile << tableHashes[j][k];
 					if (k != tableHashes[j].size() - 1) {
-						//outFile << " ";
+						outFile << " ";
 					}
 				}
 				outFile << endl;
@@ -942,7 +948,6 @@ bool NeuralNet::load(string fileName) {
 	file.open(fileName);
 	if (file.fail()) {
 		return false;
-
 	}
 	else {
 		LoadCurrNetVersion(ifstream(fileName));
@@ -963,7 +968,7 @@ void NeuralNet::LoadCurrNetVersion(ifstream rd) {
 
 	//Read layer config
 	int layerType, layerSize, activeFunc, bits, tables, neuronLim;
-	int filterx, filtery, filternum, prevImgLen, prevImgWid, prevImgDepth, zPad, maxPoolStride;
+	int filterx, filtery, filternum, prevImgLen, prevImgWid, prevImgDepth, zPad, maxPoolStride, scaleX, scaleY;
 	for (int i = 0; i < netSize; i++) {
 		rd >> layerType;
 		if (layerType == (int)DENSE) {
@@ -974,13 +979,17 @@ void NeuralNet::LoadCurrNetVersion(ifstream rd) {
 			rd >> filterx >> filtery >> filternum >> activeFunc >> prevImgLen >> prevImgWid >> prevImgDepth >> zPad >> maxPoolStride;
 			layerArray.push_back(Util::Convo(filterx, filtery, filternum, (ActivationFunction)activeFunc, prevImgLen, prevImgWid, prevImgDepth, zPad, maxPoolStride));
 		}
+		else if (layerType == (int)UPSAMPLE) {
+			rd >> scaleX >> scaleY >> prevImgLen >> prevImgWid >> prevImgDepth;
+			layerArray.push_back(Layer((LayerType)layerType, prevImgLen, prevImgWid, prevImgDepth, scaleX, scaleY));
+		}
 		else {
+			cout << layerType << endl;
 			cout << "Did not recognize loaded layer. check load function." << endl;
 		}
 	}
 
 	startNetwork(layerArray);
-
 	for (int i = 1; i < net.size(); i++) {
 		if (net[i].getLayerType() == DENSE) {
 			//Read all hashes

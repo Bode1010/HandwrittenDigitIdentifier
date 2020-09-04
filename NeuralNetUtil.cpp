@@ -396,9 +396,6 @@ Layer::Layer(LayerType l, Layer* prevLayer, int scalex, int scaley) {
 	imgLen = prevImgLen * scalex;
 	imgWid = prevImgWid * scaley;
 	mySize = imgLen * imgWid * prevImgDepth + 1;
-
-	filterCaseX = imgLen + 1 - prevImgLen;
-	filterCaseY = imgWid + 1 - prevImgWid;
 }
 
 vector<float> Util::Convolve(Image& image, Image& filter) {
@@ -508,12 +505,12 @@ Layer Util::Convo(int filterx, int filtery, int numOfFilters, ActivationFunction
 	return Layer(CONVO, filterx, filtery, numOfFilters, func, previmageLength, previmageWidth, prevImageDepthorNumOfFilters, zeroPad, maxPoolFilterXYStride);
 }
 
-Layer Util::Upsample(int prevImageLength, int prevImageWidth, int prevImageDepth, int targetLength, int targetWidth) {
-	return Layer(UPSAMPLE, prevImageLength, prevImageWidth, prevImageDepth, targetLength, targetWidth);
+Layer Util::Upsample(int prevImageLength, int prevImageWidth, int prevImageDepth, int scaleX, int scaleY) {
+	return Layer(UPSAMPLE, prevImageLength, prevImageWidth, prevImageDepth, scaleX, scaleY);
 }
 
-Layer Util::Upsample(Layer* prevLayer, int targetLength, int targetWidth) {
-	return Layer(UPSAMPLE, prevLayer, targetLength, targetWidth);
+Layer Util::Upsample(Layer* prevLayer, int scaleX, int scaleY) {
+	return Layer(UPSAMPLE, prevLayer, scaleX, scaleY);
 }
 
 vector<float> Layer::inputAt(int x) {

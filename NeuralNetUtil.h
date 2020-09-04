@@ -80,13 +80,13 @@ struct Layer {
 	//Used in creating convolutional layers that are preceded by convolutional layers with max pooling. DO NOT USE UNLESS THIS LAYER COMES AFTER A CONVOLUTIONAL LAYER. All the work of calculating image size will be done in code
 	Layer(LayerType l, int filterx, int filtery, int numOfFilters, ActivationFunction func, bool zeroPad, int maxPoolxyStride, Layer* prevLayer);
 	//Upsampling layer, transfoms image into bigger image. If previous layer was dense, you will have to specify the image length, width and depth. same depth as prev layer
-	Layer(LayerType l, int prevImageLength, int prevImageWidth, int prevImageDepth, int targetLength, int targetWidth);
+	Layer(LayerType l, int prevImageLength, int prevImageWidth, int prevImageDepth, int sclX, int sclY);
 	//Upsampling layer, if it follows a convolutional layer there is no need to specify image length width and depth. It has the depth of prev layer
-	Layer(LayerType l, Layer* prevLayer, int targetLength, int targetWidth);
+	Layer(LayerType l, Layer* prevLayer, int sclX, int sclY);
 
 	//public vars
 	int neuronLimit = 99999;
-	int bits = 6, tables = 3;
+	int bits = 0, tables = 1;
 	SimHash HashTable;
 	vector<Neuron> neuron;
 	vector<float> inputAt(int pipe);
@@ -108,8 +108,6 @@ struct Layer {
 	//To store the indexes of the neurons with the max values for each image during max pooling. Used in backprop
 	vector<vector<vector<int>>> maxNeuronIndex;
 	
-	//Upsampling vars: In my upsampling layers, I am going to need the dimensions of a filter but not an actual filter, hence "FilterCase" versus actual filter
-	int filterCaseX = 0, filterCaseY = 0;
 
 
 private:
@@ -148,8 +146,8 @@ public:
 	static Layer Convo(int filterx, int filtery, int numOfFilters, ActivationFunction func, bool zeroPad, int maxPoolxyStride, Layer* prevLayer);
 	static Layer Convo(int filterx, int filtery, int numOfFilters, ActivationFunction func, int previmageLength, int previmageWidth, int prevImageDepthorNumOfFilters, bool zeroPad);
 	static Layer Convo(int filterx, int filtery, int numOfFilters, ActivationFunction func, int previmageLength, int previmageWidth, int prevImageDepthorNumOfFilters, bool zeroPad, int maxPoolFilterXYStride);
-	static Layer Upsample(Layer* prevLayer, int targetLength, int targetWidth);
-	static Layer Upsample(int prevImageLength, int prevImageWidth, int prevImageDepth, int targetLength, int targetWidth);
+	static Layer Upsample(Layer* prevLayer, int sclX, int sclY);
+	static Layer Upsample(int prevImageLength, int prevImageWidth, int prevImageDepth, int sclX, int sclY);
 	static vector<float> CreateFractionalImage(int, int, int, int);
 	static int min3(int, int, int);
 

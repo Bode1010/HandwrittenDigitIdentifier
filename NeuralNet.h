@@ -69,7 +69,6 @@ class NeuralNet : public NeuralNetwork
 	void clearWeightGradients();
 	//Adds together the weight gradients in every pipe then applies them to the weight at the end of a batch
 	void applyWeightGradients();
-
 	//Element wise multiplication of two vectors
 	float multVec(const vector<float>&, const vector<float>&);
 	//Updates all the hashtables
@@ -90,7 +89,6 @@ class NeuralNet : public NeuralNetwork
 	void DebugWeights(int layer);
 
 	//Load functions
-	void LoadPrevNetVersion(ifstream);
 	void LoadCurrNetVersion(ifstream);
 
 public:

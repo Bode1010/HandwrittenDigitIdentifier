@@ -40,7 +40,7 @@ void ReadDataset(string fileName, vector<vector<float>>& dataset) {
 	inFile.read((char*)&columns, sizeof(int));
 	columns = reverseInt(columns);
 
-	numOfItems = 1000;
+	numOfItems = 1;
 	dataset = vector<vector<float>>(numOfItems);
 
 	unsigned char temp;
@@ -73,8 +73,34 @@ void ReadLabels(string fileName, vector<vector<float>>& labels) {
 
 }
 
-int main() {
-	/*srand(0);
+void autoEncoderTest() {
+	//Read dataset from file
+	vector<vector<float>>* dataset = new vector<vector<float>>();
+	ReadDataset("t10k-images.idx3-ubyte", *dataset);
+
+	Layer input = Util::Dense(28 * 28, NONE, 0, 1, 28 * 28);
+	Layer h1 = Util::Convo(3, 3, 16, RELU, 28, 28, 1, true, 2);
+	Layer h2 = Util::Convo(3, 3, 8, RELU, true, 2, &h1);
+	Layer h3 = Util::Convo(3, 3, 8, RELU, true, &h2);
+	Layer h4 = Util::Convo(3, 3, 8, RELU, true, &h3);
+	Layer h5 = Util::Convo(3, 3, 8, RELU, true, &h4);
+	Layer h6 = Util::Upsample(&h5, 2, 2);
+	Layer h7 = Util::Convo(3, 3, 16, RELU, true, &h6);
+	Layer h8 = Util::Upsample(&h7, 2, 2);
+	Layer output = Util::Convo(3, 3, 1, SIGMOID, true, &h8);
+
+	vector<Layer> Layout = { input, h1, h2, h3, h4, h5, h6, h7, h8, output };
+	NeuralNet myNet(Layout);
+	myNet.setDebugFlag(true);
+	myNet.load("AutoEncoderNet.hnn");
+	myNet.trainTillError(*dataset, *dataset, 1, 5, 0.1);
+	myNet.save("AutoEncoderNet.hnn");
+
+	delete(dataset);
+}
+
+void handwrittenDigitIdentifierTest() {
+	srand(0);
 	//Read dataset from file. Images are 28 by 28
 	vector<vector<float>>* dataset = new vector<vector<float>>();
 	vector<vector<float>>* label = new vector<vector<float>>();
@@ -83,16 +109,15 @@ int main() {
 
 	//Neural network architecture: Image is black and white so its initial depth is 1, afterwards its depth will be the num of filters from the prev layer
 	Layer input = Util::Dense(28 * 28, NONE, 0, 1, 28 * 28);
-	Layer h1 = Util::Convo(3, 3, 8, RELU, 28, 28, 1, false);
+	Layer h0 = Util::Upsample(28, 28, 1, 2, 2);
+	Layer h1 = Util::Convo(3, 3, 8, RELU, false, 2, &h0);
 	//Back to back conv layers don't need image size or previous layer depth specified if a pointer to previous convolutional layer is given
-	Layer h2 = Util::Convo(5, 5, 12, RELU, false, 2, &h1);
-	Layer h3 = Util::Dense(75, RELU, 0, 1, 75);
-	Layer h4 = Util::Upsample(&h2, 2, 2);
+	Layer h2 = Util::Dense(75, RELU, 0, 1, 75);
 	Layer output = Util::Dense(10, SOFTMAX, 0, 1, 10);
 
-	vector<Layer> Layout = { input, h1, h3, output };
+	vector<Layer> Layout = { input, h0, h1, h2, output };
 	NeuralNet myNet(Layout);
-	myNet.setDebugFlag(true); 
+	myNet.setDebugFlag(true);
 
 	//Train the network
 	chrono::system_clock::time_point startTime = chrono::system_clock::now();
@@ -104,37 +129,18 @@ int main() {
 	//myNet.save("Identify7.hcnn");
 	//myNet.load("TrainedIdentifier.hcnn");
 
-	/*******Draw to Screen**********
+	/*******Draw to Screen**********/
 	DisplayCnn artist(myNet, (*dataset), 28, 28);
 	artist.Draw();
-	/******************************
-	
+	/******************************/
+
 	delete(dataset);
-	delete(label);*/
+	delete(label);
+}
 
-	//Read dataset from file
-	vector<vector<float>>* dataset = new vector<vector<float>>();
-	ReadDataset("t10k-images.idx3-ubyte", *dataset);
-
-	//Neural network architecture: Image is black and white so its initial depth is 1, afterwards its depth will be the num of filters from the prev layer
-	Layer input = Util::Dense(28 * 28, NONE, 0, 1, 28 * 28);
-	Layer h1 = Util::Convo(3, 3, 16, RELU, 28, 28, 1, true, 2);
-	Layer h2 = Util::Convo(3, 3, 8, RELU, true, 2, &h1);
-	Layer h3 = Util::Convo(3, 3, 8, RELU, true, &h2);
-	Layer h4 = Util::Convo(3, 3, 8, RELU, true, &h3);
-	Layer h10 = Util::Convo(3, 3, 8, RELU, true, &h4);
-	//Layer h5 = Util::Upsample(&h4, 2, 2);
-	//Layer h6 = Util::Convo(3, 3, 8, RELU, true, &h5);
-	Layer h7 = Util::Upsample(&h10, 2, 2);
-	Layer h8 = Util::Convo(3, 3, 16, RELU, true, &h7);
-	Layer h9 = Util::Upsample(&h8, 2, 2);
-	Layer output = Util::Convo(3, 3, 1, RELU, true, &h9);
-
-	vector<Layer> Layout = { input, h1, h2, h3, h4, h10, h7, h8, h9, output };
-	NeuralNet myNet(Layout);
-	myNet.setDebugFlag(true);
-	myNet.trainTillError(*dataset, *dataset, 100, 10, 0.1);
-	
+int main() {
+	//handwrittenDigitIdentifierTest();
+	autoEncoderTest();
 
 	std::cout << "Program Terminated" << std::endl;
 	return 0;
