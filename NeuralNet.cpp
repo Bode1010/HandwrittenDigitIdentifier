@@ -253,6 +253,7 @@ void NeuralNet::ConvForwardPass(int layerIndex, int pipe) {
 	if (net[layerIndex].prevImgLen * net[layerIndex].prevImgDepth * net[layerIndex].prevImgWid + 1 != net[layerIndex - 1].size()) {
 		cout << "Calculated prev layer is not the size of actual prev layer, check conv forward pass. Layer " << layerIndex << endl;
 		cout << "Calculated: " << net[layerIndex].prevImgLen * net[layerIndex].prevImgDepth * net[layerIndex].prevImgWid + 1 << endl;
+		cout << "Previous depth: " << net[layerIndex].prevImgDepth << endl;
 		cout << "ACtual: " << net[layerIndex - 1].size() << endl;
 		return;
 	}
@@ -834,7 +835,6 @@ void NeuralNet::trainTillError(const vector<vector<float>>& input, const vector<
 			batchErrorMovingAverage /= batchErrorMovingAverageList.size();
 			if (DEBUG) cout << "Moving Batch Error: " << batchErrorMovingAverage << endl;
 			if (batchErrorMovingAverage < targetError) return;
-			save();
 		}
 	}
 }
@@ -1160,4 +1160,5 @@ void NeuralNet::applyWeightGradients() {
 			}
 		}
 	}
+	save();
 }

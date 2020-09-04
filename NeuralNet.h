@@ -1,6 +1,7 @@
 #pragma once
 #include "NeuralNetUtil.h"
 #include "NeuralNetwork.h"
+#include <string>
 #include <fstream>
 #include <deque>
 
@@ -16,7 +17,7 @@
 //ToDo:
 //Put stops if the net was initialized without any layers, or if i try to backpropagate without feed forwarding first.
 //When backpropagating in dense layers set all active neurons back to inactive! or check if this is already done. It should be
-//Save and load upsample layers
+//load is broken again
 
 //If I stopped programming in an uncompilable state, Where did I stop last?
 //GetGradientIfNextLayerConvolutional() in NeuralNet.cpp doesnt work lol
@@ -26,7 +27,7 @@ class NeuralNet : public NeuralNetwork
 	//Variables
 	int baseT = 50;
 	float lambda = 1.1;
-	float growthRate = 0.04;
+	float growthRate = 0.09;
 	float adaptiveLearningRateHyperparameter = 0.9;
 	float momentumHyperparameter = 0.9;
 	//number of hash table updates
@@ -37,7 +38,7 @@ class NeuralNet : public NeuralNetwork
 	float loss;
 
 	bool DEBUG = false;
-	string saveFile;
+	string saveFile = "";
 
 	vector<Layer> net;
 	//Default cost function
@@ -91,10 +92,11 @@ class NeuralNet : public NeuralNetwork
 
 	//Load functions
 	void LoadCurrNetVersion(ifstream);
-	void save() {save(saveFile);};
 
 public:
-	void setDebugFlag(bool dbug) {DEBUG = dbug;};
+	void setDebugFlag(bool dbug) {DEBUG = dbug;}
+	void setSaveFile(string svFl) { saveFile = svFl; }
+	void save() { save(saveFile);}
 	float getError();
 	NeuralNet() {};
 	void save(string);
