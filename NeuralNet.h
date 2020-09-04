@@ -37,6 +37,7 @@ class NeuralNet : public NeuralNetwork
 	float loss;
 
 	bool DEBUG = false;
+	string saveFile;
 
 	vector<Layer> net;
 	//Default cost function
@@ -90,6 +91,7 @@ class NeuralNet : public NeuralNetwork
 
 	//Load functions
 	void LoadCurrNetVersion(ifstream);
+	void save() {save(saveFile);};
 
 public:
 	void setDebugFlag(bool dbug) {DEBUG = dbug;};

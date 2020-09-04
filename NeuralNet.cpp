@@ -834,7 +834,7 @@ void NeuralNet::trainTillError(const vector<vector<float>>& input, const vector<
 			batchErrorMovingAverage /= batchErrorMovingAverageList.size();
 			if (DEBUG) cout << "Moving Batch Error: " << batchErrorMovingAverage << endl;
 			if (batchErrorMovingAverage < targetError) return;
-			save("AutoEncoderNet1.hnn");
+			save();
 		}
 	}
 }
@@ -866,6 +866,7 @@ void NeuralNet::DebugWeights(int layer) {
 }
 
 void NeuralNet::save(string filename) {
+	saveFile = filename;
 	//Open file
 	ofstream outFile(filename);
 

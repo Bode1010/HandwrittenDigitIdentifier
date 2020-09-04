@@ -93,9 +93,9 @@ void autoEncoderTest() {
 	vector<Layer> Layout = { input, h1, ha, h2, h3, h4, h5, h6, h7, h8, output };
 	NeuralNet myNet(Layout);
 	myNet.setDebugFlag(true);
-	myNet.load("AutoEncoderNet1.hnn");
+	myNet.load("AutoEncoderNet2.hnn");
 	myNet.trainTillError(*dataset, *dataset, 1, 1, 1);
-	myNet.save("AutoEncoderNet1.hnn");
+	myNet.save("AutoEncoderNet2.hnn");
 
 	/*******Draw to Screen**********/
 	DisplayCnn artist(myNet, (*dataset), 28, 28);
