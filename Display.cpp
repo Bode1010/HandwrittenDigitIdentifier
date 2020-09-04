@@ -98,11 +98,12 @@ void DisplayCnn::Draw() {
 	//myNet.getLayerSize(myNet.size()-1)
 	auto probabilityIndexes = probabilityIndexVisualizer(855, 100, myNet.getLayerSize(myNet.size() - 1), 50, 350);
 	//The visualizers given the info they need to vizualize(ie create images that can be displayed to screen)
-	vector<sf::Vertex> t1, t2, t3;
+	vector<sf::Vertex> t1, t2, t3, t4;
 	myNet.feedForward(curImage);
 	t1 = DrawableWindow(25, 100, 0, 0, 0, 0, curImage, 200, 200);
 	t2 = FilterVisualizer(250, 50, 600, 400);
 	t3 = probabilityVisualizer(900, 100, myNet.getOutput(), 50, 312);
+	t4 = outputImageVisualizer(700, 100, imgLen, imgWid, 200, 200);
 
 	while (window.isOpen()) {
 		sf::Event evnt = sf::Event();
@@ -165,6 +166,7 @@ void DisplayCnn::Draw() {
 					t1 = DrawableWindow(25, 100, 0, 0, 0, 0, curImage, 200, 200);
 					t2 = FilterVisualizer(250, 50, 600, 400);
 					t3 = probabilityVisualizer(900, 100, myNet.getOutput(), 50, 312);
+					t4 = outputImageVisualizer(700, 100, imgLen, imgWid, 200, 200);
 				}
 			default:
 				//If we are holding the mouse down, draw to screen
@@ -195,10 +197,11 @@ void DisplayCnn::Draw() {
 		window.clear(sf::Color(25, 100, 25));
 		window.draw(buttons);
 		window.draw(&t1[0], t1.size(), sf::Quads);
-		window.draw(&t2[0], t2.size(), sf::Quads);
-		window.draw(&t3[0], t3.size(), sf::Quads);
+		//window.draw(&t2[0], t2.size(), sf::Quads);
+		//window.draw(&t3[0], t3.size(), sf::Quads);
+		window.draw(&t4[0], t4.size(), sf::Quads);
 		for (int i = 0; i < probabilityIndexes.size(); i++) {
-			window.draw(probabilityIndexes[i]);
+			//window.draw(probabilityIndexes[i]);
 		}
 		window.draw(buttonKey1);
 		window.draw(buttonKey2);
@@ -385,6 +388,15 @@ vector<sf::Vertex> DisplayCnn::DrawableWindow(int xLoc, int yLoc, bool leftClick
 
 	//If somehow it gets here, return the current image
 	auto temp = myImageToOnScreenRepresentation(currentImage, imgLen, imgWid, xLimit, yLimit);
+	for (int i = 0; i < temp.size(); i++) {
+		temp[i].position.x += xLoc;
+		temp[i].position.y += yLoc;
+	}
+	return temp;
+}
+
+vector<sf::Vertex> DisplayCnn::outputImageVisualizer(int xLoc, int yLoc, int imgXDimension, int imgYDimension, int imgXLimit, int imgYLimit) {
+	auto temp = myImageToOnScreenRepresentation(myNet.getOutput(), imgXDimension, imgYDimension, imgXLimit, imgYLimit);
 	for (int i = 0; i < temp.size(); i++) {
 		temp[i].position.x += xLoc;
 		temp[i].position.y += yLoc;

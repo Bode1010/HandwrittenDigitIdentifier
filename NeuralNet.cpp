@@ -221,7 +221,7 @@ void NeuralNet::DenseBackwardPass(int layerIndex, int pipe) {
 		}
 
 		if (gradientAtThisPipe.size() != net[layerIndex].neuron.size()) {
-			cout << "Gradient dimensions not equal to layer dimensions. check convsgdbackpass funciton. Layer " << layerIndex << endl;
+			cout << "Gradient dimensions not equal to layer dimensions. check densebackpass funciton. Layer " << layerIndex << endl;
 			cout << "Gradient At this pipe size: " << gradientAtThisPipe.size() << endl;
 			cout << "Actual layer size: " << net[layerIndex].neuron.size() << endl;
 			return;
@@ -834,6 +834,7 @@ void NeuralNet::trainTillError(const vector<vector<float>>& input, const vector<
 			batchErrorMovingAverage /= batchErrorMovingAverageList.size();
 			if (DEBUG) cout << "Moving Batch Error: " << batchErrorMovingAverage << endl;
 			if (batchErrorMovingAverage < targetError) return;
+			save("AutoEncoderNet1.hnn");
 		}
 	}
 }

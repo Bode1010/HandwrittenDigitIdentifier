@@ -80,8 +80,9 @@ void autoEncoderTest() {
 
 	Layer input = Util::Dense(28 * 28, NONE, 0, 1, 28 * 28);
 	Layer h1 = Util::Convo(3, 3, 16, RELU, 28, 28, 1, true, 2);
-	Layer h2 = Util::Convo(3, 3, 8, RELU, true, 2, &h1);
-	Layer h3 = Util::Convo(3, 3, 8, RELU, true, &h2);
+	Layer ha = Util::Convo(3, 3, 8, RELU, true, 2, &h1);
+	Layer h2 = Util::Convo(3, 3, 8, RELU, true, &ha);
+	Layer h3 = Util::Convo(3, 3, 8, TANH, true, &h2);
 	Layer h4 = Util::Convo(3, 3, 8, RELU, true, &h3);
 	Layer h5 = Util::Convo(3, 3, 8, RELU, true, &h4);
 	Layer h6 = Util::Upsample(&h5, 2, 2);
@@ -89,12 +90,17 @@ void autoEncoderTest() {
 	Layer h8 = Util::Upsample(&h7, 2, 2);
 	Layer output = Util::Convo(3, 3, 1, SIGMOID, true, &h8);
 
-	vector<Layer> Layout = { input, h1, h2, h3, h4, h5, h6, h7, h8, output };
+	vector<Layer> Layout = { input, h1, ha, h2, h3, h4, h5, h6, h7, h8, output };
 	NeuralNet myNet(Layout);
 	myNet.setDebugFlag(true);
-	myNet.load("AutoEncoderNet.hnn");
-	myNet.trainTillError(*dataset, *dataset, 1, 5, 0.1);
-	myNet.save("AutoEncoderNet.hnn");
+	myNet.load("AutoEncoderNet1.hnn");
+	myNet.trainTillError(*dataset, *dataset, 1, 1, 1);
+	myNet.save("AutoEncoderNet1.hnn");
+
+	/*******Draw to Screen**********/
+	DisplayCnn artist(myNet, (*dataset), 28, 28);
+	artist.Draw();
+	/******************************/
 
 	delete(dataset);
 }

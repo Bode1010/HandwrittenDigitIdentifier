@@ -44,7 +44,8 @@ private:
 	vector<sf::Vertex> DrawableWindow( int xLoc, int yLoc, bool leftClick, bool rightClick, bool randClick, bool clearClick, vector<float>& currentImage, int xLimit, int yLimit);
 	//Takes in the number of probabilities as well as the info about the space its meant to be drawn in and spits out a vector of text numbering the probability
 	vector<sf::Text> probabilityIndexVisualizer(int xLoc, int yLoc, int numOfProbabilities, int xLimit, int yLimit);
-
+	//
+	vector<sf::Vertex> outputImageVisualizer(int xLoc, int yLoc, int imgXDimension, int imgYDimension, int imgXLimit, int imgYLimit);
 
 	//Auxiliary Functions:
 	//Takes a vector<float> image, its dimensions and the limits in which its meant to be drawn and returns a vertex array that draws it
