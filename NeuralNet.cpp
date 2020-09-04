@@ -877,9 +877,10 @@ void NeuralNet::save(string filename) {
 
 	//Write layer Configs
 	for (int i = 0; i < net.size(); i++) {
-		int netSize = (i == net.size() - 1) ? net[i].size() : net[i].size() - 1;
+		//remove bias if not last layer
+		int layerSize = (i == net.size() - 1) ? net[i].size() : net[i].size() - 1;
 		if (net[i].getLayerType() == DENSE) {
-			outFile << net[i].getLayerType() << " " << netSize << " ";
+			outFile << net[i].getLayerType() << " " << layerSize << " ";
 			outFile << net[i].getActivationFunction() << " " << net[i].bits << " ";
 			outFile << net[i].tables << " " << net[i].neuronLimit << endl;
 		}
@@ -1022,9 +1023,6 @@ void NeuralNet::LoadCurrNetVersion(ifstream rd) {
 					}
 					net[i].neuron[j] = (Neuron(weight));
 					weightArray.push_back(intWeight);
-				}
-				else {
-					net[i].neuron.push_back(Neuron());
 				}
 			}
 			net[i].HashTable.Hash(weightArray);
