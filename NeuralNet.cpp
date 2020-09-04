@@ -125,21 +125,20 @@ void NeuralNet::BackPropagate(const vector<float>& output, int pipe) {
 	//Put output gradient into output layer. Only calculate cost of active neurons
 	loss = 0;
 	for (unsigned i = 0; i < output.size(); i++) {
-		if (net[outLayIndex].neuron[i].getActive(pipe)) {
+		if (net[outLayIndex].neuron[i].getActive(pipe) || net[outLayIndex].getLayerType() != DENSE) {
 			net[outLayIndex].neuron[i].gradient[pipe] = CostDerivative(net[outLayIndex].neuron[i].activation[pipe], output[i]);
 			loss += Cost(net[outLayIndex].neuron[i].activation[pipe], output[i]);
 		}
 	}
 
 	//For every layer except the input. update weights and neurons
-	if (loss > 0) {
-		for (int i = outLayIndex; i > 0; i--) {
-			if (net[i].getLayerType() == DENSE) DenseBackwardPass(i, pipe);
-			else if (net[i].getLayerType() == CONVO) ConvBackwardPass(i, pipe);
-			else if (net[i].getLayerType() == UPSAMPLE) UpsampleBackwardPass(i, pipe);
-		}
+	//if (loss > 0) {
+	for (int i = outLayIndex; i > 0; i--) {
+		if (net[i].getLayerType() == DENSE) DenseBackwardPass(i, pipe);
+		else if (net[i].getLayerType() == CONVO) ConvBackwardPass(i, pipe);
+		else if (net[i].getLayerType() == UPSAMPLE) UpsampleBackwardPass(i, pipe);
 	}
-
+	//}
 }
 
 void NeuralNet::printOutput(int pipe) {
@@ -794,6 +793,10 @@ void NeuralNet::trainWithOneOutput(const vector<vector<float>>& input, const vec
 }
 
 void NeuralNet::trainTillError(const vector<vector<float>>& input, const vector<vector<float>>& output, int numOfBatches, int numOfEpochs, float targetError) {
+	if (numOfBatches > input.size()) {
+		cout << "Number of batches cane be more than number of inputs" << endl;
+		return;
+	}
 	int batchSize = input.size() / numOfBatches;
 	int movingAverageSize = 4;
 	//Check if input and output batches are the same size
@@ -824,8 +827,9 @@ void NeuralNet::trainTillError(const vector<vector<float>>& input, const vector<
 				BackPropagate(output[j * batchSize + k], k);
 				batchLoss += loss;
 			}
+			batchLoss /= batchSize;
 			applyWeightGradients();
-			batchErrorMovingAverageList.push_back(batchLoss / batchSize);
+			batchErrorMovingAverageList.push_back(batchLoss);
 			if(batchErrorMovingAverageList.size() > movingAverageSize)
 				batchErrorMovingAverageList.pop_front();
 			batchErrorMovingAverage = 0;
@@ -950,6 +954,7 @@ bool NeuralNet::load(string fileName) {
 	fstream file;
 	file.open(fileName);
 	if (file.fail()) {
+		cout << "Could not load file" << endl;
 		return false;
 	}
 	else {

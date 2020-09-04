@@ -9,10 +9,14 @@
 //During the conv feed forward at some point in the code it has one or two duplicates of an entire layer, this might be inefficient. If im ever pressured for space I can fix this
 //If filters are becoming nan(ind), one of the matrixes updating them is all zeros, you might want to check convbackprop, nextLayerDense or nextLayerConv
 //If the vizualization is too slow, its cuz im repeating calculations that only need to be done once in the vizualization process. Remember to take those out during refactoring
-//Autoencoders converge on one number if there are not enough layers
 
-//Make sure code still runs
-//Write upsampleforwardpass function and getgradientifnextlayerupsample() functions in neuralnet.cpp
+//Why does the second datapoints loss flunctuate btw a normal loss and zero? what tf is happening?
+//Do convolutions work on other pipes apart from pipe 0? the loss only flunctuates btw normal and zero when batch size is greater than 1\
+When batch size if 3, first the second pipes loss becomes zero while the third is normal, then the third becomes zero while the seconds is normal\
+then they both become zero before they reset. why tf is this happening?
+//loss in backprop is never zero, so how the fuck is batchloss zero sometimes?
+//gradient is only calculated if the neuron is set to active right? did i set all my neurons to active for convolutional layers?\
+also, do i reset them to active if every neuron is set to inactive during backprop
 
 int reverseInt(int i) {
 	char c1, c2, c3, c4;
@@ -77,31 +81,37 @@ void ReadLabels(string fileName, vector<vector<float>>& labels, int numItems) {
 void autoEncoderTest() {
 	//Read dataset from file
 	vector<vector<float>>* dataset = new vector<vector<float>>();
-	ReadDataset("t10k-images.idx3-ubyte", *dataset, 2);
+	ReadDataset("t10k-images.idx3-ubyte", *dataset, 3);
 	//encoder
 	Layer input = Util::Dense(28 * 28, NONE, 0, 1, 28 * 28);
 	Layer h1 = Util::Convo(3, 3, 24, RELU, 28, 28, 1, true, 2);
 	Layer h2 = Util::Convo(3, 3, 16, RELU, true, 2, &h1);
-	Layer ha = Util::Convo(3, 3, 8, RELU, true, &h2);
+	//Layer ha = Util::Convo(3, 3, 8, RELU, true, &h2);
 	//encoded
-	Layer h3 = Util::Convo(3, 3, 8, RELU, true, &ha);
-	Layer h4 = Util::Convo(3, 3, 4, TANH, true, &h3);
-	Layer h5 = Util::Convo(3, 3, 8, RELU, true, &h4);
+	//Layer h3 = Util::Convo(3, 3, 8, RELU, true, &ha);
+	Layer h4 = Util::Convo(3, 3, 4, TANH, true, &h2);
+	//Layer h5 = Util::Convo(3, 3, 8, RELU, true, &h4);
 	//decoder
-	Layer hb = Util::Convo(3, 3, 8, RELU, true, &h5);
-	Layer h6 = Util::Convo(3, 3, 16, RELU, true, &hb);
+	//Layer hb = Util::Convo(3, 3, 8, RELU, true, &h5);
+	Layer h6 = Util::Convo(3, 3, 16, RELU, true, &h4);
 	Layer h7 = Util::Upsample(&h6, 2, 2);
 	Layer h8 = Util::Convo(3, 3, 24, RELU, true, &h7);
 	Layer h9 = Util::Upsample(&h8, 2, 2);
 	Layer output = Util::Convo(3, 3, 1, SIGMOID, true, &h9);
 
-	vector<Layer> Layout = { input, h1, h2, ha, h3, h4, h5, hb, h6, h7, h8, h9, output };
+	vector<Layer> Layout = { input, h1, h2, h4, h6, h7, h8, h9, output };
 	NeuralNet myNet(Layout);
 	myNet.setDebugFlag(true);
 	myNet.load("AutoEncoderNet2.hnn");
 	myNet.setSaveFile("AutoEncoderNet2.hnn");
 	myNet.trainTillError(*dataset, *dataset, 1, 10000, 3);
-	myNet.save();
+
+	myNet.feedForward((*dataset)[0]);
+	myNet.BackPropagate((*dataset)[0], 0);
+	cout << "error 0: " << myNet.getError() << endl;
+	myNet.feedForward((*dataset)[1]);
+	myNet.BackPropagate((*dataset)[1], 0);
+	cout << "error 1: " << myNet.getError() << endl;
 
 	/*******Draw to Screen**********/
 	DisplayCnn artist(myNet, (*dataset), 28, 28);

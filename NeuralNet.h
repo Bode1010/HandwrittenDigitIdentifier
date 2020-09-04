@@ -17,17 +17,16 @@
 //ToDo:
 //Put stops if the net was initialized without any layers, or if i try to backpropagate without feed forwarding first.
 //When backpropagating in dense layers set all active neurons back to inactive! or check if this is already done. It should be
-//load is broken again
 
 //If I stopped programming in an uncompilable state, Where did I stop last?
-//GetGradientIfNextLayerConvolutional() in NeuralNet.cpp doesnt work lol
+//Loading and feeding forward a bunch of time doesnt mess with anything but trying traintillError after loading messes everything up
 
 class NeuralNet : public NeuralNetwork
 {
 	//Variables
 	int baseT = 50;
 	float lambda = 1.1;
-	float growthRate = 0.09;
+	float growthRate = 0.1;
 	float adaptiveLearningRateHyperparameter = 0.9;
 	float momentumHyperparameter = 0.9;
 	//number of hash table updates
@@ -51,8 +50,8 @@ class NeuralNet : public NeuralNetwork
 	vector<float> getOutput(int pipe);
 	//Forward pass through the network
 	void feedForward(vector<float> input, int pipe);
-	//Back pass through the network
-	void BackPropagate(const vector<float>& output, int pipe);
+	//
+	//
 	//backward pass through a dense layer using stochastic gradient descent
 	void DenseBackwardPass(int layerIndex, int pipeIndex);
 	//Foward pass through a dense layer
@@ -94,6 +93,8 @@ class NeuralNet : public NeuralNetwork
 	void LoadCurrNetVersion(ifstream);
 
 public:
+	//Back pass through the network
+	void BackPropagate(const vector<float>& output, int pipe);
 	void setDebugFlag(bool dbug) {DEBUG = dbug;}
 	void setSaveFile(string svFl) { saveFile = svFl; }
 	void save() { save(saveFile);}
