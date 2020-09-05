@@ -38,6 +38,8 @@ class NeuralNet : public NeuralNetwork
 
 	bool DEBUG = false;
 	string saveFile = "";
+	string saveFileBackup = "";
+	bool saveSwitch;
 
 	vector<Layer> net;
 	//Default cost function
@@ -96,8 +98,8 @@ public:
 	//Back pass through the network
 	void BackPropagate(const vector<float>& output, int pipe);
 	void setDebugFlag(bool dbug) {DEBUG = dbug;}
-	void setSaveFile(string svFl) { saveFile = svFl; }
-	void save() { save(saveFile);}
+	void setSaveFile(string svFl) { saveFile = svFl; saveFileBackup = "Backup" + svFl; }
+	void save() { if (saveSwitch) save(saveFile);  else save(saveFileBackup); saveSwitch = !saveSwitch; }
 	float getError();
 	NeuralNet() {};
 	void save(string);

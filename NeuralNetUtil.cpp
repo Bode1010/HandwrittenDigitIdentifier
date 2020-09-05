@@ -575,9 +575,8 @@ float Layer::dActivate(float x) {
 }
 
 float Layer::SigmoidActivate(float x) {
-	float expon = exp(x);
-	float ans = expon / (expon + 1);
-	return ans;
+	float expon = exp(-x);
+	return 1.f/(1.f + expon);
 }
 
 float Layer::SigmoidDActivate(float x) {
