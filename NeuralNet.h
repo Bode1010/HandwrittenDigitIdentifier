@@ -17,6 +17,7 @@
 //ToDo:
 //Put stops if the net was initialized without any layers, or if i try to backpropagate without feed forwarding first.
 //When backpropagating in dense layers set all active neurons back to inactive! or check if this is already done. It should be
+//remove biases from convolutional layers
 
 //If I stopped programming in an uncompilable state, Where did I stop last?
 //Loading and feeding forward a bunch of time doesnt mess with anything but trying traintillError after loading messes everything up
@@ -98,8 +99,8 @@ public:
 	//Back pass through the network
 	void BackPropagate(const vector<float>& output, int pipe);
 	void setDebugFlag(bool dbug) {DEBUG = dbug;}
-	void setSaveFile(string svFl) { saveFile = svFl; saveFileBackup = "Backup" + svFl; }
-	void save() { if (saveSwitch) save(saveFile);  else save(saveFileBackup); saveSwitch = !saveSwitch; }
+	void setSaveFile(string svFl);
+	void save();
 	float getError();
 	NeuralNet() {};
 	void save(string);

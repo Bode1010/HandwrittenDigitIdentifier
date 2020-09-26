@@ -388,11 +388,15 @@ void NeuralNet::ConvBackwardPass(int layerIndex, int pipe) {
 		}
 	}
 
-	//Turn ouput gradients into images and multiply them by their dActivation. Note imgLen is pre max pooled length
-	vector<vector<float>> layerOutput(net[layerIndex].filters.size(), vector<float>(net[layerIndex].size() / net[layerIndex].filters.size()));
+	//Turn output gradients into images and multiply them by their dActivation. Note imgLen is pre max pooled length
+	//prepool size getting subtracted on last layer
+	//int imgSize = net[layerIndex].imgLen * net[layerIndex].imgWid;//this fucks up on layers with max pool
+	int imgSize = (net[layerIndex].size() - 1) / net[layerIndex].filters.size();//this fucks up on last layer
+	if (layerIndex == net.size() - 1) imgSize = net[layerIndex].size() / net[layerIndex].filters.size();
+	vector<vector<float>> layerOutput(net[layerIndex].filters.size(), vector<float>(imgSize));
 	for (int i = 0; i < net[layerIndex].filters.size(); i++) {
-		for (int j = 0; j < ((net[layerIndex].size() - 1) / net[layerIndex].filters.size()); j++) {
-			layerOutput[i][j] = net[layerIndex].neuron[i * ((net[layerIndex].size() - 1) / net[layerIndex].filters.size()) + j].gradient[pipe] * net[layerIndex].dActivate(net[layerIndex].neuron[i * ((net[layerIndex].size() - 1) / net[layerIndex].filters.size()) + j].activation[pipe]);
+		for (int j = 0; j < imgSize; j++) {
+			layerOutput[i][j] = net[layerIndex].neuron[i * (imgSize) + j].gradient[pipe] * net[layerIndex].dActivate(net[layerIndex].neuron[i * (imgSize) + j].activation[pipe]);
 		}
 	}
 
@@ -482,6 +486,10 @@ void NeuralNet::ConvBackwardPass(int layerIndex, int pipe) {
 	//Update Biases
 	if (prePool.size() * prePool[0].size() != net[layerIndex].convoBias.size()) {
 		cout << "Prepool size is not the same as bias size. check convosgdbackprop" << endl;
+		cout << "prepool: " << prePool.size();
+		cout << "prepool[0]: " << prePool[0].size();
+		cout << "Bias: " << net[layerIndex].convoBias.size() << endl;
+		cout << "Layer: " << layerIndex << endl;
 	}
 	for (int i = 0; i < net[layerIndex].convoBias.size() - 1; i++) {
 		int dep = i / (net[layerIndex].imgLen * net[layerIndex].imgWid);
@@ -677,12 +685,17 @@ vector<float> NeuralNet::GetGradientIfNextLayerConvo(int layerIndex, int pipe) {
 }
 
 vector<float> NeuralNet::GetGradientIfNextLayerUpsample(int layerIndex, int pipe) {
+	//this layer should be smaller than the upsample layer right?
 	//Using the scale dimensions find the neuron in the previous layer the neuron in the current layer maps to and add its gradient to the neuron in the prev layer
 	Layer curLayer = net[layerIndex];
 	//size of current layer minus the bias
 	vector<float> gradient(curLayer.size());
 	int length = curLayer.imgLen;
 	int width = curLayer.imgWid;
+	if (curLayer.maxPoolStride != -1) {
+		length /= curLayer.maxPoolStride;
+		width /= curLayer.maxPoolStride;
+	}
 	Layer nextLayer = net[layerIndex + 1];
 	int depth = nextLayer.prevImgDepth;
 	int scaleX = nextLayer.scaleX;
@@ -700,7 +713,8 @@ vector<float> NeuralNet::GetGradientIfNextLayerUpsample(int layerIndex, int pipe
 			}
 		}
 	}
-	return gradient;
+
+ 	return gradient;
 }
 
 vector<vector<float>> NeuralNet::ConvertPreviousLayertoImages(int layerIndex, int pipe) {
@@ -838,7 +852,10 @@ void NeuralNet::trainTillError(const vector<vector<float>>& input, const vector<
 			}
 			batchErrorMovingAverage /= batchErrorMovingAverageList.size();
 			if (DEBUG) cout << "Moving Batch Error: " << batchErrorMovingAverage << endl;
-			if (batchErrorMovingAverage < targetError) return;
+			if (batchErrorMovingAverage < targetError) {
+				cout << "Target error achieved" << endl;
+				return;
+			}
 		}
 	}
 }
@@ -869,8 +886,12 @@ void NeuralNet::DebugWeights(int layer) {
 	cout << endl;
 }
 
+void NeuralNet::setSaveFile(string svFl) { 
+	saveFile = svFl; 
+	saveFileBackup = "Backup" + svFl;
+}
+
 void NeuralNet::save(string filename) {
-	saveFile = filename;
 	//Open file
 	ofstream outFile(filename);
 
@@ -948,6 +969,18 @@ void NeuralNet::save(string filename) {
 
 	//Close file
 	outFile.close();
+}
+
+void NeuralNet::save() {
+	if (saveSwitch) {
+		save(saveFile);
+		cout << "Saving to saveFile" << endl;
+	}
+	else { 
+		save(saveFileBackup); 
+		cout << "Saving to backup file" << endl;
+	}
+	saveSwitch = !saveSwitch;
 }
 
 bool NeuralNet::load(string fileName) {

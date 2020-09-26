@@ -12,6 +12,10 @@
 //If I close program while running and save file is broken, open backup save file instead. REMEMBER TO DISABLE TRAINING BEFORE OPENING ANY SAVE FILE\
 IF THE FILE IS CORRUPTED IT WILL OVERWRITE THE BACKUP IMMEDIATELY
 
+//remove bias from convo and upsample layers
+//smth is wrong with load and save
+
+
 int reverseInt(int i) {
 	char c1, c2, c3, c4;
 	c1 = i & 255;
@@ -73,36 +77,28 @@ void ReadLabels(string fileName, vector<vector<float>>& labels, int numItems) {
 }
 
 void autoEncoderTest() {
+	//increasing num of filters/num of layers gives high training time/plateauing at high errors for some reason
 	//Read dataset from file
 	vector<vector<float>>* dataset = new vector<vector<float>>();
-	ReadDataset("t10k-images.idx3-ubyte", *dataset, 10000);
-	//encoder
-	Layer input = Util::Dense(28 * 28, NONE, 0, 1, 28 * 28);
-	Layer h1 = Util::Convo(3, 3, 24, RELU, 28, 28, 1, true, 2);
-	Layer h2 = Util::Convo(3, 3, 16, RELU, true, 2, &h1);
-	//Layer ha = Util::Convo(3, 3, 8, RELU, true, &h2);
-	//encoded
-	//Layer h3 = Util::Dense(7 * 7 * 8, RELU, 0, 1, 7 * 7 * 8);
-	Layer h4 = Util::Convo(3, 3, 8, RELU, true, &h2);
-	//Layer h5 = Util::Dense(7 * 7 * 8, RELU, 0, 1, 7 * 7 * 8);
-	//decoder
-	//Layer hb = Util::Convo(3, 3, 8, RELU, true, &h5);
-	Layer h6 = Util::Convo(3, 3, 16, RELU, true, &h4);
-	Layer h7 = Util::Upsample(&h6, 2, 2);
-	Layer h8 = Util::Convo(3, 3, 24, RELU, true, &h7);
-	Layer h9 = Util::Upsample(&h8, 2, 2);
-	Layer output = Util::Convo(3, 3, 1, SIGMOID, true, &h9);
+	ReadDataset("t10k-images.idx3-ubyte", *dataset, 100);
 
-	vector<Layer> Layout = { input, h1, h2, h4, h6, h7, h8, h9, output };
+	Layer input = Util::Dense(28 * 28, NONE);
+	Layer h1 = Util::Dense(50, RELU);
+	Layer h2 = Util::Dense(15, RELU);
+	Layer h3 = Util::Dense(30, RELU);
+	Layer output = Util::Dense(28 * 28, SIGMOID);
+
+	vector<Layer> Layout = { input, h1, output };
 	NeuralNet myNet(Layout);
 	myNet.setDebugFlag(true);
-	myNet.setSaveFile("AutoEncoderNet2.hnn");
+	myNet.setSaveFile("AutoEncoderNet3.hnn");
 	bool load = true;
 	if (load) {
-		myNet.load("BackupAutoEncoderNet2.hnn");
+		myNet.load("BackupAutoEncoderNet3.hnn");
 	}
 	else {
-		myNet.trainTillError(*dataset, *dataset, 1000, 10000, 5);
+		//myNet.load("BackupAutoEncoderNet5.hnn");
+		myNet.trainTillError(*dataset, *dataset, 10, 10000, 15);
 	}
 
 	myNet.feedForward((*dataset)[0]);
